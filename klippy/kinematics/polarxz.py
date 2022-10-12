@@ -167,10 +167,10 @@ class PolarXZKinematics:
         # detect if move crosses 0,0
         if crosses_point((0, 0), move.start_pos, move.end_pos):
             move_options = (
-                    (0, 0.005),  # above 0,0
-                    (0.005, 0),  # right of 0,0
-                    (0, -0.005),  # below 0,0
-                    (-0.005, 0),  # left of 0,0
+                    (0, 0.01),  # above 0,0
+                    (0.01, 0),  # right of 0,0
+                    (0, -0.01),  # below 0,0
+                    (-0.01, 0),  # left of 0,0
                 )
 
             closest_to_start = 10000000
@@ -189,7 +189,7 @@ class PolarXZKinematics:
             move3 = (closest_start_pos, move.end_pos)
             return [move1, move3]
         else:
-            return None
+            return []
     def get_status(self, eventtime):
         xy_home = "xy" if self.limit_xy2 >= 0. else ""
         z_home = "z" if self.limit_z[0] <= self.limit_z[1] else ""
