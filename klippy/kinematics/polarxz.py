@@ -167,10 +167,10 @@ class PolarXZKinematics:
         # detect if move crosses 0,0
         if crosses_point((0, 0), move.start_pos, move.end_pos):
             move_options = (
-                    (0, 0.01),  # above 0,0
-                    (0.01, 0),  # right of 0,0
-                    (0, -0.01),  # below 0,0
-                    (-0.01, 0),  # left of 0,0
+                    (0, 0.1),  # above 0,0
+                    (0.1, 0),  # right of 0,0
+                    (0, -0.1),  # below 0,0
+                    (-0.1, 0),  # left of 0,0
                 )
 
             closest_to_start = 10000000
