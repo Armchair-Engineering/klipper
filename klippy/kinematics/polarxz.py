@@ -166,45 +166,28 @@ class PolarXZKinematics:
     def segment_move(self, move):
         # detect if move crosses 0,0
         if crosses_point((0, 0), move.start_pos, move.end_pos):
-            if move.start_pos[0] == 0 and move.end_pos[0] == 0:
-                # if we are moving directly down X == 0
-                move_options = (
+            move_options = (
+                    (0, 0.005),  # above 0,0
                     (0.005, 0),  # right of 0,0
+                    (0, -0.005),  # below 0,0
                     (-0.005, 0),  # left of 0,0
+                )
 
-                )
-            elif move.start_pos[1] == 0 and move.end_pos[1] == 0:
-                # if we are moving directly down Y == 0
-                move_options = (
-                    (0, 0.005),  # above 0,0
-                    (0, -0.005),  # below 0,0
-                )
-            else:
-                move_options = (
-                    (0, 0.005),  # above 0,0
-                    (0.005, 0),  # right of 0,0
-                    (0, -0.005),  # below 0,0
-                    (-0.005, 0),  # left of 0,0
-                )
-            closest_to_start = 100000
-            closest_to_end = 100000
-            closest_end_pos = None
+            closest_to_start = 10000000
+            # closest_to_end = 100000
+            # closest_end_pos = None
             closest_start_pos = None
             for move_option in move_options:
                 move_option = (move_option[0], move_option[1], move.end_pos[2], 0)
-                dist_to_end = distance(move_option, move.end_pos)
-                dist_to_start = distance(move_option, move.start_pos)
-                if dist_to_end < closest_to_end:
-                    closest_to_end = dist_to_end
-                    closest_end_pos = move_option
+                dist_to_start = sqrdistance(move_option, move.start_pos)
                 if dist_to_start < closest_to_start:
                     closest_to_start = dist_to_start
                     closest_start_pos = move_option
             # create a move from start to closest_start_pos
             move1 = (move.start_pos, closest_start_pos)
-            move2 = (closest_start_pos, closest_end_pos)
-            move3 = (closest_end_pos, move.end_pos)
-            return [move1, move2, move3]
+            # move2 = (closest_start_pos, closest_end_pos)
+            move3 = (closest_start_pos, move.end_pos)
+            return [move1, move3]
         else:
             return None
     def get_status(self, eventtime):
