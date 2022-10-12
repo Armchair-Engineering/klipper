@@ -93,24 +93,24 @@ class PolarXZKinematics:
             forcepos[axis] += position_max - hi.position_endstop
         # Perform homing
         homing_state.home_rails([rail], forcepos, homepos)
+    # def home(self, homing_state):
+    #     # Always home XY together
+    #     homing_axes = homing_state.get_axes()
+    #     home_xy = 0 in homing_axes or 1 in homing_axes
+    #     home_z = 2 in homing_axes
+    #     updated_axes = []
+    #     if home_xy:
+    #         updated_axes = [0, 1]
+    #     if home_z:
+    #         updated_axes.append(2)
+    #     homing_state.set_axes(updated_axes)
+    #     # Do actual homing
+    #     if home_xy:
+    #         self._home_axis(homing_state, 0, self.rails[0])
+    #         self._home_axis(homing_state, 1, self.rails[0])
+    #     if home_z:
+    #         self._home_axis(homing_state, 2, self.rails[1])
     def home(self, homing_state):
-        # Always home XY together
-        homing_axes = homing_state.get_axes()
-        home_xy = 0 in homing_axes or 1 in homing_axes
-        home_z = 2 in homing_axes
-        updated_axes = []
-        if home_xy:
-            updated_axes = [0, 1]
-        if home_z:
-            updated_axes.append(2)
-        homing_state.set_axes(updated_axes)
-        # Do actual homing
-        if home_xy:
-            self._home_axis(homing_state, 0, self.rails[0])
-            self._home_axis(homing_state, 1, self.rails[0])
-        if home_z:
-            self._home_axis(homing_state, 2, self.rails[1])
-    def home2(self, homing_state):
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
         home_xy = 0 in homing_axes or 1 in homing_axes
