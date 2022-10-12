@@ -433,7 +433,7 @@ class ToolHead:
                 Move(self, move[0], move[1], speed) for move in move_positions
             ]
             logging.info("converted moves: %s", moves)
-        for moves in moves:
+        for move in moves:
             logging.info("move: %s", move)
             if move.is_kinematic_move:
                 self.kin.check_move(move)
