@@ -190,6 +190,7 @@ class PolarXZKinematics:
             closest_end_pos = None
             closest_start_pos = None
             for move_option in move_options:
+                move_option = (move_option[0], move_option[1], move.end_pos[2], 0)
                 dist_to_end = distance(move_option, move.end_pos)
                 dist_to_start = distance(move_option, move.start_pos)
                 if dist_to_end < closest_to_end:
@@ -199,9 +200,9 @@ class PolarXZKinematics:
                     closest_to_start = dist_to_start
                     closest_start_pos = move_option
             # create a move from start to closest_start_pos
-            move1 = (move.start_pos, closest_start_pos, move.end_pos[2], 0)
-            move2 = (closest_start_pos, closest_end_pos, move.end_pos[2], 0)
-            move3 = (closest_end_pos, move.end_pos, move.end_pos[2], 0)
+            move1 = (move.start_pos, closest_start_pos)
+            move2 = (closest_start_pos, closest_end_pos)
+            move3 = (closest_end_pos, move.end_pos)
             return [move1, move2, move3]
         else:
             return None
