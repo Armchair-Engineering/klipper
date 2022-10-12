@@ -426,7 +426,7 @@ class ToolHead:
             moves = [move]
         else:
             moves = [
-                Move(self, move[0], move[0], speed) for move in move_positions
+                Move(self, move[0], move[1], speed) for move in move_positions
             ]
         for moves in moves:
             if move.is_kinematic_move:
