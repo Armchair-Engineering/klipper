@@ -420,8 +420,10 @@ class ToolHead:
             return
         if hasattr(self.kin, "segment_move"):
             move_positions = self.kin.segment_move(move)
+        else:
+            moves = [move]
         if move_positions is None:
-            move_positions = [move]
+            moves = [move]
         else:
             moves = [
                 Move(self, move[0], move[0], speed) for move in move_positions
