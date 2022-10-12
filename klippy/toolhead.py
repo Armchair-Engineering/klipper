@@ -423,6 +423,7 @@ class ToolHead:
             return
         if hasattr(self.kin, "segment_move"):
             move_positions = self.kin.segment_move(move)
+            logging.info("move_positions: %s", move_positions)
         else:
             moves = [move]
         if move_positions is None:
@@ -431,7 +432,9 @@ class ToolHead:
             moves = [
                 Move(self, move[0], move[1], speed) for move in move_positions
             ]
+            logging.info("converted moves: %s", moves)
         for moves in moves:
+            logging.info("move: %s", move)
             if move.is_kinematic_move:
                 self.kin.check_move(move)
             if move.axes_d[3]:
