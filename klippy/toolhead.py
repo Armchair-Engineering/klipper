@@ -426,7 +426,7 @@ class ToolHead:
             logging.info("move_positions: %s", move_positions)
         else:
             moves = [move]
-        if move_positions is None:
+        if move_positions == []:
             moves = [move]
         else:
             moves = [
