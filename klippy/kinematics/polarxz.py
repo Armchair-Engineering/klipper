@@ -169,14 +169,15 @@ class PolarXZKinematics:
             if move.start_pos[0] == 0 and move.end_pos[0] == 0:
                 # if we are moving directly down X == 0
                 move_options = (
-                    (0, 0.005),  # above 0,0
-                    (0, -0.005),  # below 0,0
+                    (0.005, 0),  # right of 0,0
+                    (-0.005, 0),  # left of 0,0
+
                 )
             elif move.start_pos[1] == 0 and move.end_pos[1] == 0:
                 # if we are moving directly down Y == 0
                 move_options = (
-                    (0.005, 0),  # right of 0,0
-                    (-0.005, 0),  # left of 0,0
+                    (0, 0.005),  # above 0,0
+                    (0, -0.005),  # below 0,0
                 )
             else:
                 move_options = (
