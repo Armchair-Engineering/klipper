@@ -33,6 +33,7 @@ SOURCE_FILES = [
     "kin_delta.c",
     "kin_deltesian.c",
     "kin_polar.c",
+    "kin_polarxz.c",
     "kin_rotary_delta.c",
     "kin_winch.c",
     "kin_extruder.c",
