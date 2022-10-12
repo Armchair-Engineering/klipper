@@ -22,8 +22,9 @@ class Move:
         self.timing_callbacks = []
         velocity = min(speed, toolhead.max_velocity)
         self.is_kinematic_move = True
-        logging.warn(end_pos)
-        logging.warn(start_pos)
+        logging.info("HELLO!!!!")
+        logging.info(end_pos)
+        logging.info(start_pos)
         self.axes_d = axes_d = [end_pos[i] - start_pos[i] for i in (0, 1, 2, 3)]
         self.move_d = move_d = math.sqrt(sum([d*d for d in axes_d[:3]]))
         if move_d < .000000001:
