@@ -418,12 +418,21 @@ class ToolHead:
         move = Move(self, self.commanded_pos, newpos, speed)
         if not move.move_d:
             return
-        if move.is_kinematic_move:
-            self.kin.check_move(move)
-        if move.axes_d[3]:
-            self.extruder.check_move(move)
-        self.commanded_pos[:] = move.end_pos
-        self.move_queue.add_move(move)
+        if hasattr(self.kin, "segment_move"):
+            move_positions = self.kin.segment_move(move)
+        if move_positions is None:
+            move_positions = [move]
+        else:
+            moves = [
+                Move(self, move[0], move[0], speed) for move in move_positions
+            ]
+        for moves in moves:
+            if move.is_kinematic_move:
+                self.kin.check_move(move)
+            if move.axes_d[3]:
+                self.extruder.check_move(move)
+            self.commanded_pos[:] = move.end_pos
+            self.move_queue.add_move(move)
         if self.print_time > self.need_check_stall:
             self._check_stall()
     def manual_move(self, coord, speed):

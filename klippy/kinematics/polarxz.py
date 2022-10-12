@@ -8,6 +8,17 @@ import stepper
 
 def distance(p1, p2):
     return math.sqrt(((p2[0] - p1[0]) ** 2) + ((p2[1] - p1[1]) ** 2))
+    
+def sqrdistance(p1, p2):
+    return ((p2[0] - p1[0]) ** 2) + ((p2[1] - p1[1]) ** 2)
+
+
+def crosses_point(checkpoint, p1, p2):
+    # check if check point lies on the line between p1 and p2
+    return sqrdistance(checkpoint, p1) <= sqrdistance(p1, p2) and sqrdistance(
+        checkpoint, p2
+    ) <= sqrdistance(p1, p2)
+
 def distance_point_to_line(p0, p1, p2):
     return (
         abs(
@@ -136,8 +147,8 @@ class PolarXZKinematics:
             pi = 3.1415
             bed_center = (0, 0) # TODO: Cartesian X,Y of bed center
             bed_radius = distance(bed_center, (bed_center[0], self.axes_min[0]))
-	    start_xy = move.start_pos
-	    end_xy = move.end_pos
+            start_xy = move.start_pos
+            end_xy = move.end_pos
             start_radius = distance(bed_center, start_xy)
             # move_radius = distance_point_to_line(bed_center, start_xy, end_xy)
             end_radius = distance(bed_center, end_xy)
@@ -152,6 +163,48 @@ class PolarXZKinematics:
             z_ratio = move.move_d / abs(move.axes_d[2])
             move.limit_speed(self.max_z_velocity * z_ratio,
                              self.max_z_accel * z_ratio)
+    def segment_move(self, move):
+        # detect if move crosses 0,0
+        if crosses_point((0, 0), move.start_pos, move.end_pos):
+            if move.start_pos[0] == 0 and move.end_pos[0] == 0:
+                # if we are moving directly down X == 0
+                move_options = (
+                    (0, 0.005),  # above 0,0
+                    (0, -0.005),  # below 0,0
+                )
+            elif move.start_pos[1] == 0 and move.end_pos[1] == 0:
+                # if we are moving directly down Y == 0
+                move_options = (
+                    (0.005, 0),  # right of 0,0
+                    (-0.005, 0),  # left of 0,0
+                )
+            else:
+                move_options = (
+                    (0, 0.005),  # above 0,0
+                    (0.005, 0),  # right of 0,0
+                    (0, -0.005),  # below 0,0
+                    (-0.005, 0),  # left of 0,0
+                )
+            closest_to_start = 100000
+            closest_to_end = 100000
+            closest_end_pos = None
+            closest_start_pos = None
+            for move_option in move_options:
+                dist_to_end = distance(move_option, move.end_pos)
+                dist_to_start = distance(move_option, move.start_pos)
+                if dist_to_end < closest_to_end:
+                    closest_to_end = dist_to_end
+                    closest_end_pos = move_option
+                if dist_to_start < closest_to_start:
+                    closest_to_start = dist_to_start
+                    closest_start_pos = move_option
+            # create a move from start to closest_start_pos
+            move1 = (move.start_pos, closest_start_pos)
+            move2 = (closest_start_pos, closest_end_pos)
+            move3 = (closest_end_pos, move.end_pos)
+            return [move1, move2, move3]
+        else:
+            return None
     def get_status(self, eventtime):
         xy_home = "xy" if self.limit_xy2 >= 0. else ""
         z_home = "z" if self.limit_z[0] <= self.limit_z[1] else ""
