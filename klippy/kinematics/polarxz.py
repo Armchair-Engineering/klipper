@@ -163,33 +163,54 @@ class PolarXZKinematics:
             z_ratio = move.move_d / abs(move.axes_d[2])
             move.limit_speed(self.max_z_velocity * z_ratio,
                              self.max_z_accel * z_ratio)
+
     def segment_move(self, move):
         # detect if move crosses 0,0
-        if crosses_point((0, 0), move.start_pos, move.end_pos):
-            move_options = (
-                    (0, 0.1),  # above 0,0
-                    (0.1, 0),  # right of 0,0
-                    (0, -0.1),  # below 0,0
-                    (-0.1, 0),  # left of 0,0
-                )
+        if move.axes_d[0] or move.axes_d[1]:
+            if crosses_point((0, 0), move.start_pos, move.end_pos):
 
-            closest_to_start = 10000000
-            # closest_to_end = 100000
-            # closest_end_pos = None
-            closest_start_pos = None
-            for move_option in move_options:
-                move_option = (move_option[0], move_option[1], move.end_pos[2], 0)
-                dist_to_start = sqrdistance(move_option, move.start_pos)
-                if dist_to_start < closest_to_start:
-                    closest_to_start = dist_to_start
-                    closest_start_pos = move_option
-            # create a move from start to closest_start_pos
-            move1 = (move.start_pos, closest_start_pos)
-            # move2 = (closest_start_pos, closest_end_pos)
-            move3 = (closest_start_pos, move.end_pos)
-            return [move1, move3]
-        else:
-            return []
+                if move.start_pos[0] == 0 and move.end_pos[0] == 0:
+                    # if we are moving directly down X == 0
+                    move_options = (
+                        (self.zero_offset_dist, 0),  # right of 0,0
+                        (-self.zero_offset_dist, 0),  # left of 0,0
+                    )
+                elif move.start_pos[1] == 0 and move.end_pos[1] == 0:
+                    # if we are moving directly down Y == 0
+                    move_options = (
+                        (0, self.zero_offset_dist),  # above 0,0
+                        (0, -self.zero_offset_dist),  # below 0,0
+                    )
+                else:
+                    move_options = (
+                        (0, self.zero_offset_dist),  # above 0,0
+                        (self.zero_offset_dist, 0),  # right of 0,0
+                        (0, -self.zero_offset_dist),  # below 0,0
+                        (-self.zero_offset_dist, 0),  # left of 0,0
+                    )
+                closest_to_start = 10000000
+                closest_start_pos = None
+                total_extrude_dist = move.start_pos[3] - move.end_pos[3]
+                extrude_1 = move.start_pos[3] + total_extrude_dist / 2
+                for move_option in move_options:
+                    move_option = (
+                        move_option[0],
+                        move_option[1],
+                        move.end_pos[2],
+                        extrude_1,
+                    )
+                    dist_to_start = sqrdistance(move_option, move.start_pos)
+                    if dist_to_start < closest_to_start:
+                        closest_to_start = dist_to_start
+                        closest_start_pos = move_option
+                # create a move from start to closest_start_pos
+                move1 = (move.start_pos, closest_start_pos)
+                # move2 = (closest_start_pos, closest_end_pos)
+                move2 = (closest_start_pos, move.end_pos)
+                return [move1, move2]
+            else:
+                return []
+                
     def get_status(self, eventtime):
         xy_home = "xy" if self.limit_xy2 >= 0. else ""
         z_home = "z" if self.limit_z[0] <= self.limit_z[1] else ""
