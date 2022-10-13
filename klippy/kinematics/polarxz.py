@@ -60,6 +60,7 @@ class PolarXZKinematics:
         min_z, max_z = self.rails[1].get_range()
         self.axes_min = toolhead.Coord(-max_xy, -max_xy, min_z, 0.)
         self.axes_max = toolhead.Coord(max_xy, max_xy, max_z, 0.)
+        self.zero_offset_dist = config.getfloat('zero_offset_dist', 0.1, minval=0.0001, above=0.)
     def get_steppers(self):
         return list(self.steppers)
     def calc_position(self, stepper_positions):
@@ -210,7 +211,7 @@ class PolarXZKinematics:
                 return [move1, move2]
             else:
                 return []
-                
+
     def get_status(self, eventtime):
         xy_home = "xy" if self.limit_xy2 >= 0. else ""
         z_home = "z" if self.limit_z[0] <= self.limit_z[1] else ""
