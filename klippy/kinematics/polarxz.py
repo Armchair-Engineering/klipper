@@ -256,13 +256,13 @@ class PolarXZKinematics:
             rotational_velocity = rotational_velocity * radius_scale
             if rotational_velocity > self.max_rotational_velocity:
                 rotational_velocity = self.max_rotational_velocity
-                
+
             vx = (radial_velocity * math.cos(polar_start[1])) - (polar_start[0] * rotational_velocity * math.sin(polar_start[1]))
             vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
 
             adjusted_velocity = math.sqrt(vx**2 + vy**2)
 
-            move.limit_speed(self.max_rotational_accel, adjusted_velocity)
+            move.limit_speed(adjusted_velocity, self.max_rotational_accel)
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
                 if self.limit_z[0] > self.limit_z[1]:
