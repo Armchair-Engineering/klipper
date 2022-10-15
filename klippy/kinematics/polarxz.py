@@ -3,8 +3,9 @@
 # Copyright (C) 2018-2021  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import logging, math
 import stepper
+import sys
+import logging, math
 from collections import OrderedDict
 EPSILON = 0.00001
 HALF_PI = math.pi * 0.5
@@ -127,7 +128,10 @@ class PolarXZKinematics:
                 self._motor_off)
         # Setup boundary checks
         max_velocity, max_accel = toolhead.get_max_velocity()
-        self.max_rotational_velocity = config.getfloat('max_rotational_velocity', max_velocity, above=0., maxval=max_velocity)
+        #in deg/s
+        self.max_rotational_velocity = config.getfloat('max_rotational_velocity', 360, above=0.0)
+        #convert max_rotational_velocity to radians per second
+        self.max_rotational_velocity = math.radians(self.max_rotational_velocity)
         self.max_rotational_accel = config.getfloat('max_rotational_accel', max_accel, above=0., maxval=max_accel)
         self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity,
                 above=0., maxval=max_velocity)
@@ -225,16 +229,40 @@ class PolarXZKinematics:
         # Limit the maximum acceleration against the rotational distance theta
         # TODO: Optimize with code from the chelper?
         if move.axes_d[0] or move.axes_d[1]:
-            pi = 3.1415
-            bed_center = BED_CENTER # TODO: Cartesian X,Y of bed center
-            bed_radius = distance(bed_center, (bed_center[0], self.axes_min[0])) # pointless i think? can just use axes_min[0]
+
+            bed_radius = self.axes_min[0]
+
+
             start_xy = move.start_pos
             end_xy = move.end_pos
-            start_radius = distance(bed_center, start_xy)
-            # move_radius = distance_point_to_line(bed_center, start_xy, end_xy)
-            end_radius = distance(bed_center, end_xy)
-            scale = 2 * math.pi * ( min(start_radius, end_radius) / bed_radius )
-            move.limit_speed(self.max_rotational_accel, self.max_rotational_velocity * scale)
+            polar_start = cartesian_to_polar(start_xy[0], start_xy[1])
+            polar_end = cartesian_to_polar(end_xy[0], end_xy[1])
+            dr = polar_end[0] - polar_start[0]
+
+            dt = move.min_move_t
+
+            dtheta = polar_end[1] - polar_start[1]
+
+            rotational_velocity = dtheta / dt
+            radial_velocity = dr / dt
+            if radial_velocity == 0:
+                r = polar_start[0]
+                #calculate sagitta
+                sagitta = r - math.sqrt((r**2) - ((distance(move.start_pos, move.end_pos)/2)**2))
+                radial_velocity = sagitta / dt
+            
+            radius_scale = min(polar_start[0], polar_end[0]) / bed_radius
+
+            rotational_velocity = rotational_velocity * radius_scale
+            if rotational_velocity > self.max_rotational_velocity:
+                rotational_velocity = self.max_rotational_velocity
+                
+            vx = (radial_velocity * math.cos(polar_start[1])) - (polar_start[0] * rotational_velocity * math.sin(polar_start[1]))
+            vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
+
+            adjusted_velocity = math.sqrt(vx**2 + vy**2)
+
+            move.limit_speed(self.max_rotational_accel, adjusted_velocity)
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
                 if self.limit_z[0] > self.limit_z[1]:
