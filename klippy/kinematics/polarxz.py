@@ -276,7 +276,7 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
-        def testit(move):
+        # def testit(move):
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -457,10 +457,8 @@ class PolarXZKinematics:
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
                 actual_moves.append((
-                    (
                         (move[0][0], move[0][1], current_z_pos, current_e_pos),
                         (move[1][0], move[1][1], new_z_pos, new_e_pos),
-                    ),
                 ))
             print(actual_moves)
             return actual_moves
