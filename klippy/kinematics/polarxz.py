@@ -280,7 +280,13 @@ class PolarXZKinematics:
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
             cart_end_y = move.end_pos[1]
-            riserun = (cart_end_y - cart_start_y) / (cart_end_x - cart_start_x)
+            delta_x = cart_end_x - cart_start_x
+            delta_y = cart_end_y - cart_start_y
+            
+            if delta_x == 0:
+                riserun = 0
+            else:
+                riserun = delta_y / delta_x
 
             #calculate y intercept
             if riserun == 0:
