@@ -413,6 +413,9 @@ class PolarXZKinematics:
                         handled_zero = True
                         continue
                     if len(intersection_subset):
+                        if len(intersection_subset) == 2:
+                            #sort by distance from start
+                            intersection_subset = sorted(intersection_subset, key=lambda x: sqrdistance(x, move.start_pos))
                         intersections[radius] = intersection_subset
 
             #intersections is an ordered dict, descending, 
