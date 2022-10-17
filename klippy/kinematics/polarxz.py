@@ -282,7 +282,7 @@ class PolarXZKinematics:
             cart_end_y = move.end_pos[1]
             delta_x = cart_end_x - cart_start_x
             delta_y = cart_end_y - cart_start_y
-            
+
             if delta_x == 0:
                 riserun = 0
             else:
@@ -455,7 +455,7 @@ class PolarXZKinematics:
                 e_dist = move_dist / total_move_dist * total_e_dist
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
-                actual_moves.append((move[0][0], move[0][1], current_z_pos, current_e_pos),(move[1][0], move[1][1], new_z_pos, new_e_pos))
+                actual_moves.append(((move[0][0], move[0][1], current_z_pos, current_e_pos),(move[1][0], move[1][1], new_z_pos, new_e_pos)))
             return actual_moves
         else:
             return []
