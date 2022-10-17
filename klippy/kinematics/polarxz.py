@@ -276,6 +276,7 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
+        def testit(move):
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -361,7 +362,7 @@ class PolarXZKinematics:
             if (
                 start_circle_index == mid_circle_index == end_circle_index
             ):  # if we don't cross a velocity milestone
-                return (move.start_pos, move.end_pos)
+                return ((move.start_pos, move.end_pos),)
             
             intersections = OrderedDict()
             indices_to_traverse = []
