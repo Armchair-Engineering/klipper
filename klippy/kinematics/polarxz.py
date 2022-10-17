@@ -447,7 +447,7 @@ class PolarXZKinematics:
             total_z_dist = move.end_pos[2] - move.start_pos[2]
             total_e_dist = move.end_pos[3] - move.start_pos[3]
             actual_moves = []
-            current_z_pos = move.start_pos[2][2]
+            current_z_pos = move.start_pos[2]
             current_e_pos = move.start_pos[3]
             for move in xy_moves:
                 move_dist = distance(move[0], move[1])
