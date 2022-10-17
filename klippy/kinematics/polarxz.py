@@ -456,7 +456,7 @@ class PolarXZKinematics:
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
                 actual_moves.append(((move[0][0], move[0][1], current_z_pos, current_e_pos),(move[1][0], move[1][1], new_z_pos, new_e_pos)))
-            logging.info('actual moves: %s', actual_moves)
+            
             return actual_moves
         else:
             return []

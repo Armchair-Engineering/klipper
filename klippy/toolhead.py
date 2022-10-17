@@ -14,6 +14,8 @@ import logging
 # Class to track each move request
 class Move:
     def __init__(self, toolhead, start_pos, end_pos, speed):
+        logging.info('start_pos: %s', start_pos)
+        logging.info('end_pos: %s', end_pos)
         self.toolhead = toolhead
         self.start_pos = tuple(start_pos)
         self.end_pos = tuple(end_pos)
