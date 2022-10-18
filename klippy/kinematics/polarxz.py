@@ -192,7 +192,7 @@ class PolarXZKinematics:
         # Do actual homing
         if home_xy:
             self._home_axis(homing_state, 0, self.rails[0])
-            self._home_axis(homing_state, 1, self.rails[0])
+            # self._home_axis(homing_state, 1, self.rails[0])
         if home_z:
             self._home_axis(homing_state, 2, self.rails[1])
     # def home(self, homing_state):
