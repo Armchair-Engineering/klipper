@@ -224,7 +224,11 @@ class PolarXZKinematics:
                     forcepos[axis_index] = 1
                 else:
                     forcepos[axis_index] = -1
-
+            else:
+                if hi.positive_dir:
+                    forcepos[axis_index] -= hi.position_endstop - position_min
+                else:
+                    forcepos[axis_index] += position_max - hi.position_endstop
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
 
