@@ -117,7 +117,7 @@ class PolarXZKinematics:
         stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
         rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
         rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
-        self.rails = [rail_x, rail_z]
+        self.rails = [rail_x, None, rail_z]
         self.steppers = [stepper_bed] + [
                 s for r in self.rails for s in r.get_steppers()
         ]
@@ -202,7 +202,7 @@ class PolarXZKinematics:
         home_z = 2 in homing_axes
         for axis in homing_state.get_axes():
             if axis == 1:
-                next
+                continue
             rail = self.rails[axis]
             # Determine movement
             position_min, position_max = rail.get_range()
@@ -216,6 +216,7 @@ class PolarXZKinematics:
                 forcepos[axis] += 1.5 * (position_max - hi.position_endstop)
             if axis == 0:
                 forcepos[axis] = 1
+
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
     def _motor_off(self, print_time):
