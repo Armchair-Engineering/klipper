@@ -276,7 +276,6 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
-        # def testit(move):
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -317,11 +316,11 @@ class PolarXZKinematics:
 
             use_min = False            
             if (
-                (cart_start_x < closest_to_origin[0] < cart_end_x)
-                or (cart_start_x > closest_to_origin[0] > cart_end_x)
+                (cart_start_x <= closest_to_origin[0] <= cart_end_x)
+                or (cart_start_x >= closest_to_origin[0] >= cart_end_x)
             ) and (
-                (cart_start_y < closest_to_origin[1] < cart_end_y)
-                or (cart_start_y > closest_to_origin[1] > cart_end_y)
+                (cart_start_y <= closest_to_origin[1] <= cart_end_y)
+                or (cart_start_y >= closest_to_origin[1] >= cart_end_y)
             ):
                 use_min = True
             
@@ -393,6 +392,7 @@ class PolarXZKinematics:
                     )
                     if i == len(velocity_milestones) - 1 and not handled_zero:
                         #we're in the zero radius
+                        print('zero radius!')
                         
                         if len(intersection_subset) == 2:
 
@@ -413,9 +413,6 @@ class PolarXZKinematics:
                         handled_zero = True
                         continue
                     if len(intersection_subset):
-                        if len(intersection_subset) == 2:
-                            #sort by distance from start
-                            intersection_subset = sorted(intersection_subset, key=lambda x: sqrdistance(x, move.start_pos))
                         intersections[radius] = intersection_subset
 
             #intersections is an ordered dict, descending, 
@@ -426,19 +423,18 @@ class PolarXZKinematics:
             # if there's only one, put it to the end of start
             # at the end, we'll put start + end together for the full list of points
             # maybe has an issue if you start at a lower radius and move through center to higher?
-            intersections_start = []
-            intersections_end = []
-            for radius, intersections in intersections.items():
-                intersections_start.append(intersections[0])
-                if len(intersections) > 1:
-                    intersections_end.insert(0,intersections[1])
+            #flatten values of intersections
+            flattened_intersections = []
+            for radius, intersection_subset in intersections.items():
+                flattened_intersections.extend(intersection_subset)
             total_intersections = (
                 [(move.start_pos[0], move.start_pos[1])]
-                + intersections_start
-                + intersections_end
+                + flattened_intersections
                 + [(move.end_pos[0], move.end_pos[1])]
             )
-            if + move.end_pos[0] == 0 and move.end_pos[1] == 0:
+            #sort total intersections by distance from start
+            total_intersections = sorted(total_intersections, key=lambda x: sqrdistance(x, move.start_pos))
+            if move.end_pos[0] == 0 and move.end_pos[1] == 0:
                 total_intersections.pop(-1)
             if move.start_pos[0] == 0 and move.start_pos[1] == 0:
                 total_intersections.pop(0)
