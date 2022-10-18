@@ -118,6 +118,7 @@ class PolarXZKinematics:
         rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
         rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
         self.rails = [rail_x, rail_z]
+        self.rail_lookup = {'x': rail_x, 'z': rail_z}
         self.steppers = [stepper_bed] + [
                 s for r in self.rails for s in r.get_steppers()
         ]
@@ -198,30 +199,35 @@ class PolarXZKinematics:
     def home(self, homing_state):
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
-        home_xy = 0 in homing_axes or 1 in homing_axes
-        home_z = 2 in homing_axes
-        axes_to_home = [0 if home_xy else None, 1 if home_z else None]
-        for axis in axes_to_home:
-            if axis == None:
-                continue
-            rail = self.rails[axis]
-            if axis == 1:
-                axis = 2
+        axes_to_home = []
+        if  0 in homing_axes or 1 in homing_axes:
+            axes_to_home.append('x')
+        if 2 in homing_axes:
+            axes_to_home.append('z')
+        
+        for named_axis in axes_to_home:
+            rail = self.rail_lookup[named_axis]
+            axis_index = None
+            if named_axis == 'x':
+                axis_index = 0
+            elif named_axis == 'z':
+                axis_index = 2
             # Determine movement
             position_min, position_max = rail.get_range()
             hi = rail.get_homing_info()
             homepos = [None, None, None, None]
-            homepos[axis] = hi.position_endstop
+            homepos[axis_index] = hi.position_endstop
             forcepos = list(homepos)
-            if hi.positive_dir:
-                forcepos[axis] -= 1.5 * (hi.position_endstop - position_min)
-            else:
-                forcepos[axis] += 1.5 * (position_max - hi.position_endstop)
-            if axis == 0:
-                forcepos[axis] = 1
+
+            if named_axis == 'x':
+                if hi.positive_dir:
+                    forcepos[axis_index] = 1
+                else:
+                    forcepos[axis_index] = -1
 
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
+
     def _motor_off(self, print_time):
         self.limit_z = (1.0, -1.0)
         self.limit_xy2 = -1.
@@ -236,11 +242,18 @@ class PolarXZKinematics:
         # TODO: Optimize with code from the chelper?
         if move.axes_d[0] or move.axes_d[1]:
 
-            bed_radius = self.axes_min[0]
-
-
             start_xy = move.start_pos
             end_xy = move.end_pos
+            accel = move.accel
+            delta_x = end_xy[0] - start_xy[0]
+            delta_y = end_xy[1] - start_xy[1]
+            # calculate accel components of x and y from deltas
+            move_hypot = math.sqrt(delta_x**2 + delta_y**2)
+            accel_x = accel * delta_x / move_hypot
+            accel_y = accel * delta_y / move_hypot
+            #convert accel x and accel y to polar components
+            # accel_theta = math.atan2(accel_y, accel_x)
+            # accel_r = math.sqrt(accel_x**2 + accel_y**2)
             polar_start = cartesian_to_polar(start_xy[0], start_xy[1])
             polar_end = cartesian_to_polar(end_xy[0], end_xy[1])
             dr = polar_end[0] - polar_start[0]
@@ -257,7 +270,7 @@ class PolarXZKinematics:
                 sagitta = r - math.sqrt((r**2) - ((distance(move.start_pos, move.end_pos)/2)**2))
                 radial_velocity = sagitta / dt
             
-            radius_scale = min(polar_start[0], polar_end[0]) / bed_radius
+            radius_scale = min(polar_start[0], polar_end[0]) / self.bed_radius
 
             rotational_velocity = rotational_velocity * radius_scale
             if rotational_velocity > self.max_rotational_velocity:

@@ -24,15 +24,13 @@ class Move:
         self.timing_callbacks = []
         velocity = min(speed, toolhead.max_velocity)
         self.is_kinematic_move = True
-        logging.info(end_pos)
-        logging.info(start_pos)
         self.axes_d = axes_d = [end_pos[i] - start_pos[i] for i in (0, 1, 2, 3)]
         self.move_d = move_d = math.sqrt(sum([d*d for d in axes_d[:3]]))
         if move_d < .000000001:
             # Extrude only move
             self.end_pos = (start_pos[0], start_pos[1], start_pos[2],
                             end_pos[3])
-            axes_d[0] = axes_d[1] = axes_d[2] = 0.
+            axes_d[0] = axes_d[1] = axes_d[2] = 0.0
             self.move_d = move_d = abs(axes_d[3])
             inv_move_d = 0.
             if move_d:
