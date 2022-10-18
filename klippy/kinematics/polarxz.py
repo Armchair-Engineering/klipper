@@ -3,6 +3,7 @@
 # Copyright (C) 2018-2021  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
+from turtle import update
 import stepper
 import sys
 import logging, math
@@ -117,7 +118,7 @@ class PolarXZKinematics:
         stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
         rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
         rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
-        self.rails = [rail_x, None, rail_z]
+        self.rails = [rail_x, rail_z]
         self.steppers = [stepper_bed] + [
                 s for r in self.rails for s in r.get_steppers()
         ]
@@ -200,8 +201,9 @@ class PolarXZKinematics:
         homing_axes = homing_state.get_axes()
         home_xy = 0 in homing_axes or 1 in homing_axes
         home_z = 2 in homing_axes
-        for axis in homing_state.get_axes():
-            if axis == 1:
+        axes_to_home = [0 if home_xy else None, 1 if home_z else None]
+        for axis in axes_to_home:
+            if axis == None:
                 continue
             rail = self.rails[axis]
             # Determine movement
