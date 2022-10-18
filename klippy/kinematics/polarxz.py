@@ -169,8 +169,8 @@ class PolarXZKinematics:
         hi = rail.get_homing_info()
         homepos = [None, None, None, None]
         homepos[axis] = hi.position_endstop
-        if axis == 0:
-            homepos[1] = 0.
+        # if axis == 0:
+        #     homepos[1] = 0.
         forcepos = list(homepos)
         if hi.positive_dir:
             forcepos[axis] -= hi.position_endstop - position_min
