@@ -205,6 +205,8 @@ class PolarXZKinematics:
             if axis == None:
                 continue
             rail = self.rails[axis]
+            if axis == 1:
+                axis = 2
             # Determine movement
             position_min, position_max = rail.get_range()
             hi = rail.get_homing_info()
