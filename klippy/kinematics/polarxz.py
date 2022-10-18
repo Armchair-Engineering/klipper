@@ -215,7 +215,7 @@ class PolarXZKinematics:
             else:
                 forcepos[axis] += 1.5 * (position_max - hi.position_endstop)
             if axis == 0:
-                forcepos[axis] = 0
+                forcepos[axis] = 1
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
     def _motor_off(self, print_time):
