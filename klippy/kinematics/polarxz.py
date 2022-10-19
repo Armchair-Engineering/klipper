@@ -293,7 +293,11 @@ class PolarXZKinematics:
             vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
 
             adjusted_velocity = math.sqrt(vx**2 + vy**2)
-
+            logging.info("adjusted velocity: %s", adjusted_velocity)
+            logging.info("step_ratio: %s" % step_ratio)
+            logging.info("delta_degrees: %s" % delta_degrees)
+            logging.info("delta_distance: %s" % delta_distance)
+            logging.info("steps_per_degree: %s" % steps_per_degree)
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
             move.limit_speed(step_ratio * adjusted_velocity, step_ratio * self.max_rotational_accel)
         if move.axes_d[2]:
