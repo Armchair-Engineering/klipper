@@ -315,7 +315,6 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
-        def testit(move):
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -398,10 +397,10 @@ class PolarXZKinematics:
                     ):
                         mid_circle_index = index
 
-            # if (
-            #     start_circle_index == mid_circle_index == end_circle_index
-            # ):  # if we don't cross a velocity milestone
-            #     return ((move.start_pos, move.end_pos),)
+            if (
+                start_circle_index == mid_circle_index == end_circle_index
+            ):  # if we don't cross a velocity milestone
+                return ((move.start_pos, move.end_pos),)
             
             intersections = OrderedDict()
             indices_to_traverse = []
@@ -468,7 +467,7 @@ class PolarXZKinematics:
             for radius, intersection_subset in intersections.items():
                 flattened_intersections.extend(intersection_subset)
             total_intersections = flattened_intersections
-            if not move.start_pos[0] == flattened_intersections[0][0] and not move.start_pos[1] == flattened_intersections[0][1]:               
+            if not move.start_pos[0] == flattened_intersections[0][0] and move.start_pos[1] == flattened_intersections[0][1]:               
                 total_intersections = [move.start_pos] + total_intersections
             if not move.end_pos[0] == flattened_intersections[-1][0] and move.end_pos[1] == flattened_intersections[-1][1]:
                 total_intersections = total_intersections + [move.end_pos]
