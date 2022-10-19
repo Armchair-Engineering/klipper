@@ -296,10 +296,11 @@ class PolarXZKinematics:
 
             adjusted_velocity = math.sqrt(vx**2 + vy**2)
             logging.info("adjusted velocity: %s", adjusted_velocity)
-            logging.info("step_ratio: %s" % step_ratio)
 
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
-            move.limit_speed(step_ratio * adjusted_velocity, step_ratio * self.max_rotational_accel)
+            move.limit_speed(math.abs(step_ratio * adjusted_velocity), step_ratio * self.max_rotational_accel)
+            logging.info("cruise_v: %s", move.cruise_v)
+            logging.info("start_v: %s", move.start_v)
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
                 if self.limit_z[0] > self.limit_z[1]:
