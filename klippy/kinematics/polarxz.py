@@ -110,16 +110,16 @@ def distance_point_to_line(p0, p1, p2):
 class PolarXZKinematics:
     def __init__(self, toolhead, config):
         # Setup axis steppers
-        stepper_bed = stepper.PrinterStepper(config.getsection('stepper_bed'),
+        self.stepper_bed = stepper.PrinterStepper(config.getsection('stepper_bed'),
                 units_in_radians=True)
         rail_x = stepper.PrinterRail(config.getsection('stepper_x'))
         rail_z = stepper.PrinterRail(config.getsection('stepper_z'))
-        stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
+        self.stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
         rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
         rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
         self.rails = [rail_x, rail_z]
         self.rail_lookup = {'x': rail_x, 'z': rail_z}
-        self.steppers = [stepper_bed] + [
+        self.steppers = [self.stepper_bed] + [
                 s for r in self.rails for s in r.get_steppers()
         ]
         for s in self.get_steppers():
@@ -266,6 +266,15 @@ class PolarXZKinematics:
 
             dtheta = polar_end[1] - polar_start[1]
 
+            delta_degrees = math.degrees(dtheta)
+            if delta_degrees == 0:
+                pass
+            else:
+                steps_per_degree = 360 / 1.8 * (16 / 120)
+                delta_distance = distance(move.start_pos, move.end_pos)
+                step_ratio = delta_distance * steps_per_degree / abs(delta_degrees)
+
+
             rotational_velocity = dtheta / dt
             radial_velocity = dr / dt
             if radial_velocity == 0:
@@ -285,7 +294,8 @@ class PolarXZKinematics:
 
             adjusted_velocity = math.sqrt(vx**2 + vy**2)
 
-            move.limit_speed(adjusted_velocity, self.max_rotational_accel)
+            # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
+            move.limit_speed(step_ratio * adjusted_velocity, step_ratio * self.max_rotational_accel)
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
                 if self.limit_z[0] > self.limit_z[1]:
