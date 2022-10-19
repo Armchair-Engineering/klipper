@@ -396,10 +396,10 @@ class PolarXZKinematics:
                     ):
                         mid_circle_index = index
 
-            # if (
-            #     start_circle_index == mid_circle_index == end_circle_index
-            # ):  # if we don't cross a velocity milestone
-            #     return ((move.start_pos, move.end_pos),)
+            if (
+                start_circle_index == mid_circle_index == end_circle_index
+            ):  # if we don't cross a velocity milestone
+                return ((move.start_pos, move.end_pos),)
             
             intersections = OrderedDict()
             indices_to_traverse = []
