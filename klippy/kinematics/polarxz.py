@@ -315,12 +315,15 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
+            logging.info("segmenting move!")
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
             cart_end_y = move.end_pos[1]
             delta_x = cart_end_x - cart_start_x
             delta_y = cart_end_y - cart_start_y
+            logging.info("start_pos: %s" % move.start_pos)
+            logging.info("end_pos: %s" % move.end_pos)
 
             if delta_x == 0:
                 riserun = 0
