@@ -465,12 +465,12 @@ class PolarXZKinematics:
             flattened_intersections = []
             for radius, intersection_subset in intersections.items():
                 flattened_intersections.extend(intersection_subset)
+            total_intersections = flattened_intersections
 
-            total_intersections = (
-                [(move.start_pos[0], move.start_pos[1])]
-                + flattened_intersections
-                + [(move.end_pos[0], move.end_pos[1])]
-            )
+            total_intersections = [move.start_pos] + total_intersections
+            if move.end_pos[0] != flattened_intersections[-1][0] and move.end_pos[1] != flattened_intersections[-1][1]:
+                total_intersections = total_intersections + [move.end_pos]
+                
             #sort total intersections by distance from start
             total_intersections = sorted(total_intersections, key=lambda x: sqrdistance(x, move.start_pos))
             if move.end_pos[0] == 0 and move.end_pos[1] == 0:
