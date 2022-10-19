@@ -299,8 +299,6 @@ class PolarXZKinematics:
             logging.info("step_ratio: %s" % step_ratio)
 
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
-            if adjusted_velocity == 0:
-                raise Exception('velocity is 0?!')
             move.limit_speed(abs(step_ratio * adjusted_velocity), step_ratio * self.max_rotational_accel)
 
         if move.axes_d[2]:

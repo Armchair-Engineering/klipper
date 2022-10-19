@@ -105,6 +105,7 @@ class Move:
         self.end_v = end_v = math.sqrt(end_v2)
         # Determine time spent in each portion of move (time is the
         # distance divided by average velocity)
+        logging.info("start_v: %f, cruise_v: %f, end_v: %f", start_v, cruise_v, end_v)
         self.accel_t = accel_d / ((start_v + cruise_v) * 0.5)
         self.cruise_t = cruise_d / cruise_v
         self.decel_t = decel_d / ((end_v + cruise_v) * 0.5)
