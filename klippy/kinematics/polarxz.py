@@ -270,7 +270,7 @@ class PolarXZKinematics:
             if delta_degrees == 0:
                 step_ratio = 1
             else:
-                steps_per_degree = 360 / 1.8 * (16 / 120)
+                steps_per_degree = 360 / 1.8 * (16 / 120.0)
                 delta_distance = distance(move.start_pos, move.end_pos)
                 step_ratio = delta_distance * steps_per_degree / abs(delta_degrees)
                 logging.info("delta_degrees: %s" % delta_degrees)
