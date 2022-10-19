@@ -200,6 +200,7 @@ class PolarXZKinematics:
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
         axes_to_home = []
+
         if  0 in homing_axes or 1 in homing_axes:
             axes_to_home.append('x')
         if 2 in homing_axes:
@@ -314,6 +315,7 @@ class PolarXZKinematics:
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
         if move.axes_d[0] or move.axes_d[1]:
+        def testit(move):
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -396,10 +398,10 @@ class PolarXZKinematics:
                     ):
                         mid_circle_index = index
 
-            if (
-                start_circle_index == mid_circle_index == end_circle_index
-            ):  # if we don't cross a velocity milestone
-                return ((move.start_pos, move.end_pos),)
+            # if (
+            #     start_circle_index == mid_circle_index == end_circle_index
+            # ):  # if we don't cross a velocity milestone
+            #     return ((move.start_pos, move.end_pos),)
             
             intersections = OrderedDict()
             indices_to_traverse = []
