@@ -246,7 +246,6 @@ class PolarXZKinematics:
         # Limit the maximum acceleration against the rotational distance theta
         # TODO: Optimize with code from the chelper?
         if move.axes_d[0] or move.axes_d[1]:
-
             start_xy = move.start_pos
             end_xy = move.end_pos
             accel = move.accel
@@ -314,8 +313,8 @@ class PolarXZKinematics:
 
     def segment_move(self, move):
         #TODO maybe velocity scale the moves here for efficiency? idk
-        if move.axes_d[0] or move.axes_d[1]:\
-        # def testit(move)
+        if move.axes_d[0] or move.axes_d[1]:
+        # def testit(move):
             logging.info("segmenting move!")
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
@@ -405,7 +404,9 @@ class PolarXZKinematics:
                 start_circle_index == mid_circle_index == end_circle_index
             ):  # if we don't cross a velocity milestone
                 return ((move.start_pos, move.end_pos),)
-            
+            logging.info("start_circle_index: %s", start_circle_index)
+            logging.info("velocity_milestones: %s", velocity_milestones)
+
             intersections = OrderedDict()
             indices_to_traverse = []
             if start_circle_index >= mid_circle_index >= end_circle_index:
