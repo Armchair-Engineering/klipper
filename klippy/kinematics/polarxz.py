@@ -374,27 +374,27 @@ class PolarXZKinematics:
             for index, radius in enumerate(velocity_milestones):
                 sqred_radius = radius ** 2
                 if (
-                    dist_start_sqred > sqred_radius
+                    (dist_start_sqred > sqred_radius or abs(dist_start_sqred - sqred_radius) < EPSILON)
                     and start_circle_index is None
                     or dist_start_sqred == 0.0
                 ):
                     start_circle_index = index
                 if (
-                    dist_end_sqred > sqred_radius
+                    (dist_end_sqred > sqred_radius or abs(dist_end_sqred - sqred_radius) < EPSILON)
                     and end_circle_index is None
                     or dist_end_sqred == 0.0
                 ):
                     end_circle_index = index
                 if use_min:
                     if (
-                        dist_min_sqred > sqred_radius
+                        (dist_min_sqred > sqred_radius or abs(dist_min_sqred - sqred_radius) < EPSILON)
                         and mid_circle_index is None
                         or dist_min_sqred == 0.0
                     ):
                         mid_circle_index = index
                 else:
                     if (
-                        dist_midpoint_sqred > sqred_radius
+                        (dist_midpoint_sqred > sqred_radius or abs(dist_midpoint_sqred - sqred_radius) < EPSILON)
                         and mid_circle_index is None
                         or dist_midpoint_sqred == 0.0
                     ):
