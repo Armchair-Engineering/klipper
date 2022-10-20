@@ -118,6 +118,8 @@ class PolarXZKinematics:
                 units_in_radians=True)
         rail_x = stepper.PrinterRail(config.getsection('stepper_x'))
         rail_z = stepper.PrinterRail(config.getsection('stepper_z'))
+        rail_x.get_endstops()[0][0].add_stepper(rail_z.get_steppers()[0])
+        rail_z.get_endstops()[0][0].add_stepper(rail_x.get_steppers()[0])
         self.stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
         rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
         rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
