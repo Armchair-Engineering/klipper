@@ -264,11 +264,11 @@ class PolarXZKinematics:
 
             dt = move.min_move_t
 
-            dtheta = polar_end[1] - polar_start[1]
+            dtheta = float(polar_end[1] - polar_start[1])
 
-            delta_degrees = math.degrees(dtheta)
+            delta_degrees = float(math.degrees(dtheta))
             if delta_degrees == 0:
-                step_ratio = self.max_accel / self.max_rotational_accel
+                step_ratio = float(self.max_accel) / float(self.max_rotational_accel)
             else:
                 steps_per_degree = 360 / 1.8 * (16 / 120.0)
                 delta_distance = distance(move.start_pos, move.end_pos)
@@ -316,6 +316,8 @@ class PolarXZKinematics:
         if move.axes_d[0] or move.axes_d[1]:
         # def testit(move):
             logging.info("segmenting move!")
+            move.start_pos = (float(move.start_pos[0]), float(move.start_pos[1]), move.start_pos[2], move.start_pos[3])
+            move.end_pos = (float(move.end_pos[0]), float(move.end_pos[1]), move.end_pos[2], move.end_pos[3])
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
@@ -326,15 +328,15 @@ class PolarXZKinematics:
             logging.info("end_pos: %s", move.end_pos)
 
             if delta_x == 0:
-                riserun = 0
+                riserun = 0.
             else:
                 riserun = delta_y / delta_x
 
             #calculate y intercept
             if riserun == 0:
-                riserun2 = 90
+                riserun2 = 90.
             else:
-                riserun2 = -1 / riserun
+                riserun2 = -1. / riserun
             
             y_intercept = cart_start_y - (riserun * cart_start_x)
             #calculate x intercept
@@ -348,8 +350,8 @@ class PolarXZKinematics:
             dist_start_sqred = sqrdistance(move.start_pos, BED_CENTER)
             dist_end_sqred = sqrdistance(move.end_pos, BED_CENTER)
             midpoint = (
-                (move.start_pos[0] + move.end_pos[0]) / 2,
-                (move.start_pos[1] + move.end_pos[1]) / 2,
+                (move.start_pos[0] + move.end_pos[0]) / 2.,
+                (move.start_pos[1] + move.end_pos[1]) / 2.,
             )
             dist_midpoint_sqred = sqrdistance(midpoint, BED_CENTER)
             dist_min_sqred = sqrdistance(closest_to_origin, BED_CENTER)
@@ -446,7 +448,7 @@ class PolarXZKinematics:
                             #if we know we're zero crossing, the angle to start and to end will always be pi (180deg) apart
                             #we want to find a point perpendicular to the line between start and end, at a distance of self.zero_crossing_radius
                             incoming_angle = math.atan2(intersection_subset[0][1], intersection_subset[0][0])
-                            perpendicular_angle = incoming_angle + (math.pi / 2)
+                            perpendicular_angle = incoming_angle + (math.pi / 2.)
                             offset_position = polar_to_cartesian(self.zero_crossing_radius, perpendicular_angle)
                             intersections[radius] = (offset_position,)
                         elif len(intersection_subset) == 1:
