@@ -473,9 +473,9 @@ class PolarXZKinematics:
                 flattened_intersections.extend(intersection_subset)
             total_intersections = flattened_intersections
             total_intersections = sorted(total_intersections, key=lambda x: sqrdistance(x, move.start_pos))
-            if not (move.start_pos[0] == total_intersections[0][0] and move.start_pos[1] == total_intersections[0][1]):               
+            if not (abs(move.start_pos[0] - total_intersections[0][0]) > EPSILON and abs(move.start_pos[1] - total_intersections[0][1]) > EPSILON):               
                 total_intersections = [move.start_pos] + total_intersections
-            if not (move.end_pos[0] == total_intersections[-1][0] and move.end_pos[1] == total_intersections[-1][1]):
+            if not (abs(move.end_pos[0] - total_intersections[-1][0]) > EPSILON and abs(move.end_pos[1] - total_intersections[-1][1]) > EPSILON):
                 total_intersections = total_intersections + [move.end_pos]
                 
             #sort total intersections by distance from start
