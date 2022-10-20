@@ -50,10 +50,10 @@ def get_circle_line_intersections(p1, p2, radius):
         x2 = ((D * dy) - (math.copysign(1, dy) * dx * math.sqrt(disc))) / (dr ** 2)
         y1 = ((-D * dx) + (abs(dy) * math.sqrt(disc))) / (dr ** 2)
         y2 = ((-D * dx) - (abs(dy) * math.sqrt(disc))) / (dr ** 2)
-        x1 = math.round(x1, 10)
-        x2 = math.round(x2, 10)
-        y1 = math.round(y1, 10)
-        y2 = math.round(y2, 10)
+        x1 = round(x1, 10)
+        x2 = round(x2, 10)
+        y1 = round(y1, 10)
+        y2 = round(y2, 10)
         intersection1 = (x1, y1)
         intersection2 = (x2, y2)
         if (
@@ -404,10 +404,10 @@ class PolarXZKinematics:
                     ):
                         mid_circle_index = index
 
-            # if (
-            #     start_circle_index == mid_circle_index == end_circle_index
-            # ):  # if we don't cross a velocity milestone
-            #     return ((move.start_pos, move.end_pos),)
+            if (
+                start_circle_index == mid_circle_index == end_circle_index
+            ):  # if we don't cross a velocity milestone
+                return ((move.start_pos, move.end_pos),)
 
             logging.info("start_circle_index: %s", start_circle_index)
             logging.info("velocity_milestones: %s", velocity_milestones)
