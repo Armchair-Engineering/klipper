@@ -583,6 +583,10 @@ class ToolHead:
             'SQUARE_CORNER_VELOCITY', None, minval=0.)
         requested_accel_to_decel = gcmd.get_float(
             'ACCEL_TO_DECEL', None, above=0.)
+        requested_rotational_accel = gcmd.get_float(
+            'ROTATIONAL_ACCEL', None, above=0.)
+        requested_rotational_velocity = gcmd.get_float(
+            'ROTATIONAL_VELOCITY', None, above=0.)
         if max_velocity is not None:
             self.max_velocity = max_velocity
         if max_accel is not None:
@@ -591,6 +595,10 @@ class ToolHead:
             self.square_corner_velocity = square_corner_velocity
         if requested_accel_to_decel is not None:
             self.requested_accel_to_decel = requested_accel_to_decel
+        if requested_rotational_accel is not None:
+            self.kin.max_rotational_accel = requested_rotational_accel
+        if requested_rotational_velocity is not None:
+            self.kin.max_rotational_velocity = math.radians(requested_rotational_velocity)
         self._calc_junction_deviation()
         msg = ("max_velocity: %.6f\n"
                "max_accel: %.6f\n"

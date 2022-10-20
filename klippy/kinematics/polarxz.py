@@ -128,16 +128,16 @@ class PolarXZKinematics:
         config.get_printer().register_event_handler("stepper_enable:motor_off",
                 self._motor_off)
         # Setup boundary checks
-        max_velocity, max_accel = toolhead.get_max_velocity()
+        self.max_velocity, self.max_accel = toolhead.get_max_velocity()
         #in deg/s
         self.max_rotational_velocity = config.getfloat('max_rotational_velocity', 360, above=0.0)
         #convert max_rotational_velocity to radians per second
         self.max_rotational_velocity = math.radians(self.max_rotational_velocity)
-        self.max_rotational_accel = config.getfloat('max_rotational_accel', max_accel, above=0., maxval=max_accel)
-        self.max_z_velocity = config.getfloat('max_z_velocity', max_velocity,
-                above=0., maxval=max_velocity)
-        self.max_z_accel = config.getfloat('max_z_accel', max_accel, above=0.,
-                maxval=max_accel)
+        self.max_rotational_accel = config.getfloat('max_rotational_accel', self.max_accel, above=0., maxval=self.max_accel)
+        self.max_z_velocity = config.getfloat('max_z_velocity', self.max_velocity,
+                above=0., maxval=self.max_velocity)
+        self.max_z_accel = config.getfloat('max_z_accel', self.max_accel, above=0.,
+                maxval=self.max_accel)
         self.limit_z = (1.0, -1.0)
         self.limit_xy2 = -1.
         max_xy = self.rails[0].get_range()[1]
@@ -222,9 +222,9 @@ class PolarXZKinematics:
 
             if named_axis == 'x':
                 if hi.positive_dir:
-                    forcepos[axis_index] = 1
+                    forcepos[axis_index] = self.zero_crossing_radius
                 else:
-                    forcepos[axis_index] = -1
+                    forcepos[axis_index] = -self.zero_crossing_radius
             else:
                 if hi.positive_dir:
                     forcepos[axis_index] -= hi.position_endstop - position_min
@@ -268,7 +268,7 @@ class PolarXZKinematics:
 
             delta_degrees = math.degrees(dtheta)
             if delta_degrees == 0:
-                step_ratio = 1
+                step_ratio = self.max_accel / self.max_rotational_accel
             else:
                 steps_per_degree = 360 / 1.8 * (16 / 120.0)
                 delta_distance = distance(move.start_pos, move.end_pos)
