@@ -215,9 +215,9 @@ class PolarXZKinematics:
             updated_axes.append(2)
         homing_state.set_axes(updated_axes)
         for axis in updated_axes:
-            if axis == 2: #1 is z
+            if axis == 2: #if we're homing z, get the z rail
                 rail = self.rails[1]
-            elif axis == 1:
+            elif axis == 1: #y doesn't do shit
                 continue
             elif axis == 0:
                 rail = self.rails[0]
@@ -233,13 +233,9 @@ class PolarXZKinematics:
             logging.info("hi.position_endstop: %s", hi.position_endstop)
             logging.info("position_min: %s", position_min)
             logging.info("position_max: %s", position_max)
-            # if axis == 0:
-            #     if hi.positive_dir:
-            #         forcepos[axis] = self.zero_crossing_radius
-            #     else:
-            #         forcepos[axis] = -self.zero_crossing_radius
-            # else:
-            if hi.positive_dir:
+            if hi.positive_dir: 
+                #klipper dies if we do a move at 0,0, so offset position by microstep distance
+                #TODO - maybe only offset if it's an x move
                 forcepos[axis] -= hi.position_endstop - position_min - self.zero_crossing_radius
             else:
                 forcepos[axis] += position_max - hi.position_endstop + self.zero_crossing_radius
