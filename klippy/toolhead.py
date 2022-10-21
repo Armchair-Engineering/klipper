@@ -187,6 +187,7 @@ class MoveQueue:
         move.calc_junction(self.queue[-2])
         self.junction_flush -= move.min_move_t
         if self.junction_flush <= 0.:
+            logging.info('flushing...')
             # Enough moves have been queued to reach the target flush time.
             self.flush(lazy=True)
 
