@@ -206,17 +206,19 @@ class PolarXZKinematics:
     def home(self, homing_state):
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
-        axes_to_home = []
-        
-        if  0 in homing_axes or 1 in homing_axes:
-            axes_to_home.append('x')
-        if 2 in homing_axes:
-            axes_to_home.append('z')
-        
+        home_xy = 0 in homing_axes or 1 in homing_axes
+        home_z = 2 in homing_axes
+        if home_xy:
+            updated_axes = [0, 1]
+        if home_z:
+            updated_axes.append(2)
         for axis in homing_axes:
-            rail = self.rails[axis]
-            if axis == 1: #1 is z
-                axis = 2
+            if axis == 2: #1 is z
+                rail = self.rails[1]
+            elif axis == 1:
+                continue
+            elif axis == 0:
+                rail = self.rails[0]
             # Determine movement
             position_min, position_max = rail.get_range()
             hi = rail.get_homing_info()
