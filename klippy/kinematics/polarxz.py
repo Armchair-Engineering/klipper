@@ -626,6 +626,8 @@ class PolarXZKinematics:
                         (round(move[0][0],10), round(move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
                         (round(move[1][0],10), round(move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
                 ))
+                current_e_pos = new_e_pos
+                current_z_pos = new_z_pos
             print(actual_moves)
             return actual_moves
         else:
