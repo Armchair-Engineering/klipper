@@ -159,8 +159,8 @@ class PolarXZKinematics:
         bed_angle = stepper_positions[self.steppers[0].get_name()]
         x_pos = stepper_positions[self.rails[0].get_name()]
         z_pos = stepper_positions[self.rails[1].get_name()]
-        return [(0.5 * ((math.cos(bed_angle) * x_pos) - z_pos)),
-            math.sin(bed_angle) * x_pos, (0.5 * (x_pos + z_pos))]
+        
+        return [(0.5 * (x_pos + z_pos)), bed_angle, (0.5 * (x_pos - z_pos))]
     def set_position(self, newpos, homing_axes):
         for s in self.steppers:
             s.set_position(newpos)
