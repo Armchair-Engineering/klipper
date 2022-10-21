@@ -240,7 +240,7 @@ class PolarXZKinematics:
             #         forcepos[axis] = -self.zero_crossing_radius
             # else:
             if hi.positive_dir:
-                forcepos[axis] -= hi.position_endstop - position_min + self.zero_crossing_radius
+                forcepos[axis] -= hi.position_endstop - position_min - self.zero_crossing_radius
             else:
                 forcepos[axis] += position_max - hi.position_endstop + self.zero_crossing_radius
             # Perform homing
