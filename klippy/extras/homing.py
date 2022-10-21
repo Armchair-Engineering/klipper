@@ -65,6 +65,8 @@ class HomingMove:
             kin_spos[sname] += offsets.get(sname, 0) * stepper.get_step_dist()
             logging.info("step dist: %s", stepper.get_step_dist())
             logging.info("kin_spos: %s", kin_spos)
+        cs = [(s.get_name(), s.get_commanded_position()) for s in kin.get_steppers()]
+        logging.info("commanded_poses: %s", cs)
         thpos = self.toolhead.get_position()
         logging.info("thpos: %s", thpos)
         return_val =  list(kin.calc_position(kin_spos))[:3] + thpos[3:]
