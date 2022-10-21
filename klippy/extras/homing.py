@@ -126,10 +126,14 @@ class HomingMove:
             logging.info("trigpos: %s", trigpos)
             logging.info("over_steps: %s", over_steps)
             if any(over_steps.values()):
+                logging.info('movepos: %s', movepos)
+
                 self.toolhead.set_position(movepos)
                 halt_kin_spos = {s.get_name(): s.get_commanded_position()
                                  for s in kin.get_steppers()}
+                logging.info('halt_kin_spos: %s', halt_kin_spos)
                 haltpos = self.calc_toolhead_pos(halt_kin_spos, over_steps)
+                logging.info('haltpos: %s', haltpos)
         self.toolhead.set_position(haltpos)
         # Signal homing/probing move complete
         try:
