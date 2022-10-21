@@ -277,9 +277,9 @@ class PolarXZKinematics:
             # accel_r = math.sqrt(accel_x**2 + accel_y**2)
             polar_start = cartesian_to_polar(start_xy[0], start_xy[1])
             polar_end = cartesian_to_polar(end_xy[0], end_xy[1])
-            # dr = polar_end[0] - polar_start[0]
+            dr = polar_end[0] - polar_start[0]
 
-            # dt = move.min_move_t
+            dt = move.min_move_t
 
             dtheta = polar_end[1] - polar_start[1]
 
@@ -299,29 +299,29 @@ class PolarXZKinematics:
                 logging.info("delta_distance: %s" % delta_distance)
                 logging.info("steps_per_degree: %s" % steps_per_degree)
 
-            # rotational_velocity = dtheta / dt
-            # radial_velocity = dr / dt
-            # if radial_velocity == 0:
-            #     r = polar_start[0]
-            #     #calculate sagitta
-            #     sagitta = r - math.sqrt((r**2) - ((distance(move.start_pos, move.end_pos)/2)**2))
-            #     radial_velocity = sagitta / dt
+            rotational_velocity = dtheta / dt
+            radial_velocity = dr / dt
+            if radial_velocity == 0:
+                r = polar_start[0]
+                #calculate sagitta
+                sagitta = r - math.sqrt((r**2) - ((distance(move.start_pos, move.end_pos)/2)**2))
+                radial_velocity = sagitta / dt
             
-            # radius_scale = min(polar_start[0], polar_end[0]) / self.bed_radius
+            radius_scale = min(polar_start[0], polar_end[0]) / self.bed_radius
 
-            # rotational_velocity = rotational_velocity * radius_scale
-            # if rotational_velocity > self.max_rotational_velocity:
-            #     rotational_velocity = self.max_rotational_velocity
+            rotational_velocity = rotational_velocity * radius_scale
+            if rotational_velocity > self.max_rotational_velocity:
+                rotational_velocity = self.max_rotational_velocity
 
-            # vx = (radial_velocity * math.cos(polar_start[1])) - (polar_start[0] * rotational_velocity * math.sin(polar_start[1]))
-            # vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
+            vx = (radial_velocity * math.cos(polar_start[1])) - (polar_start[0] * rotational_velocity * math.sin(polar_start[1]))
+            vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
 
-            # adjusted_velocity = math.sqrt(vx**2 + vy**2)
-            # logging.info("adjusted velocity: %s", adjusted_velocity)
-            # logging.info("step_ratio: %s" % step_ratio)
+            adjusted_velocity = math.sqrt(vx**2 + vy**2)
+            logging.info("adjusted velocity: %s", adjusted_velocity)
+            logging.info("step_ratio: %s" % step_ratio)
 
-            # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
-            move.limit_speed(abs(step_ratio * self.max_rotational_velocity), step_ratio * self.max_rotational_accel)
+            move.limit_speed(math.sqrt(move.max_cruise_v2) * radius_scale, move.accel)
+            # move.limit_speed(abs(step_ratio * self.max_rotational_velocity), step_ratio * self.max_rotational_accel)
 
 
         if move.axes_d[2]:
