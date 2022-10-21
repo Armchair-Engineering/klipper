@@ -433,9 +433,7 @@ class ToolHead:
             moves = [
                 Move(self, move[0], move[1], speed) for move in move_positions
             ]
-            logging.info("converted moves: %s", moves)
         for move in moves:
-            logging.info("move: %s", move)
             if move.is_kinematic_move:
                 self.kin.check_move(move)
             if move.axes_d[3]:
@@ -495,6 +493,7 @@ class ToolHead:
         self.drip_completion = drip_completion
         # Submit move
         try:
+            logging.info('drip newpos: %s', newpos)
             self.move(newpos, speed)
         except self.printer.command_error as e:
             self.flush_step_generation()
