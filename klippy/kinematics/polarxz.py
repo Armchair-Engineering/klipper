@@ -208,11 +208,13 @@ class PolarXZKinematics:
         homing_axes = homing_state.get_axes()
         home_xy = 0 in homing_axes or 1 in homing_axes
         home_z = 2 in homing_axes
+        updated_axes = []
         if home_xy:
             updated_axes = [0, 1]
         if home_z:
             updated_axes.append(2)
-        for axis in homing_axes:
+        homing_state.set_axes(updated_axes)
+        for axis in updated_axes:
             if axis == 2: #1 is z
                 rail = self.rails[1]
             elif axis == 1:
