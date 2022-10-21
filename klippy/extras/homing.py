@@ -116,16 +116,15 @@ class HomingMove:
             trig_steps = {sp.stepper_name: sp.trig_pos - sp.start_pos
                           for sp in self.stepper_positions}
             haltpos = trigpos = self.calc_toolhead_pos(kin_spos, trig_steps)
-            logging.info("haltpos: %s", haltpos)
-            logging.info("trigpos: %s", trigpos)
-            logging.info("trigsteps: %s", trig_steps)
-            logging.info("haltsteps: %s", halt_steps)
             if trig_steps != halt_steps:
                 haltpos = self.calc_toolhead_pos(kin_spos, halt_steps)
         else:
             haltpos = trigpos = movepos
             over_steps = {sp.stepper_name: sp.halt_pos - sp.trig_pos
                           for sp in self.stepper_positions}
+            logging.info("haltpos: %s", haltpos)
+            logging.info("trigpos: %s", trigpos)
+            logging.info("over_steps: %s", over_steps)
             if any(over_steps.values()):
                 self.toolhead.set_position(movepos)
                 halt_kin_spos = {s.get_name(): s.get_commanded_position()
