@@ -340,8 +340,8 @@ class PolarXZKinematics:
             move_time = move.min_move_t
             num_segments = self.segments_per_second * move_time
             segment_dist = total_move_dist / num_segments
-            if segment_dist < self.min_segment_dist:
-                num_segments = total_move_dist / self.min_segment_dist
+            if segment_dist < self.min_segment_length:
+                num_segments = total_move_dist / self.min_segment_length
 
             points = []
             stepx = dx / num_segments
