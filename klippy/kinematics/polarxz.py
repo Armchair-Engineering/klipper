@@ -426,7 +426,7 @@ class PolarXZKinematics:
         if self.toolhead.special_queuing_state == 'Drip':
             return []
         if move.axes_d[0] or move.axes_d[1]:
-        def testit(move):
+        # def testit(move):
             logging.info("segmenting move!")
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
