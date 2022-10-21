@@ -413,6 +413,8 @@ class PolarXZKinematics:
                         (round(xy_move[0][0],10), round(xy_move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
                         (round(xy_move[1][0],10), round(xy_move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
                 ))
+                current_e_pos = new_e_pos
+                current_z_pos = new_z_pos
             leftover = round(num_segments % 1, 10)
             if leftover > 0:
                 actual_moves.append((actual_moves[-1][-1], move.end_pos))
