@@ -239,11 +239,11 @@ class PolarXZKinematics:
                 #TODO - maybe only offset if it's an x move
                 forcepos[axis] -= hi.position_endstop - position_min - self.zero_crossing_radius
                 if forcepos[axis] < position_min:
-                    forcepos[axis] = position_min
+                    forcepos[axis] = position_min + self.zero_crossing_radius
             else:
                 forcepos[axis] += position_max - hi.position_endstop + self.zero_crossing_radius
                 if forcepos[axis] > position_max:
-                    forcepos[axis] = position_max
+                    forcepos[axis] = position_max - self.zero_crossing_radius
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
 
