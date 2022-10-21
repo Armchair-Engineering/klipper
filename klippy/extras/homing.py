@@ -63,8 +63,13 @@ class HomingMove:
         for stepper in kin.get_steppers():
             sname = stepper.get_name()
             kin_spos[sname] += offsets.get(sname, 0) * stepper.get_step_dist()
+            logging.info("step dist: %s", stepper.get_step_dist())
+            logging.info("kin_spos: %s", kin_spos)
         thpos = self.toolhead.get_position()
-        return list(kin.calc_position(kin_spos))[:3] + thpos[3:]
+        logging.info("thpos: %s", thpos)
+        return_val =  list(kin.calc_position(kin_spos))[:3] + thpos[3:]
+        logging.info("return_val: %s", return_val)
+        return return_val
     def homing_move(self, movepos, speed, probe_pos=False,
                     triggered=True, check_triggered=True):
         # Notify start of homing/probing move
