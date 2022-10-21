@@ -334,6 +334,8 @@ class PolarXZKinematics:
         if self.toolhead.special_queuing_state == 'Drip':
             return []
         if move.axes_d[0] or move.axes_d[1]:
+            logging.info('segmenting move!')
+            logging.info('move: %s, ', (move.start_pos, move.end_pos))
             total_move_dist = distance(move.start_pos, move.end_pos)
             dx = move.end_pos[0] - move.start_pos[0]
             dy = move.end_pos[1] - move.start_pos[1]
@@ -354,7 +356,6 @@ class PolarXZKinematics:
                 points.append((round(px,10),round(py,10)))
                 px += stepx
                 py += stepy
-
             points = [(move.start_pos[0],move.start_pos[1])] + points
             logging.info("points: %s" % points)
             xy_moves = []
@@ -378,6 +379,9 @@ class PolarXZKinematics:
                         (round(move[0][0],10), round(move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
                         (round(move[1][0],10), round(move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
                 ))
+            leftover = round(num_segments % 1, 10)
+            if leftover > 0:
+                actual_moves.append((actual_moves[-1][-1], move.end_pos))
             return actual_moves
         else:
             return []
