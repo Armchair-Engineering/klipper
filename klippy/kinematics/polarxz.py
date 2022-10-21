@@ -361,7 +361,6 @@ class PolarXZKinematics:
 
 
     def segment_move(self, move):
-        return []
         logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
         if self.toolhead.special_queuing_state == 'Drip':
             return []
