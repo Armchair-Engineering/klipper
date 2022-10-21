@@ -310,14 +310,6 @@ class PolarXZKinematics:
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
             move.limit_speed(abs(step_ratio * adjusted_velocity), step_ratio * self.max_rotational_accel)
 
-            if distance(move.end_pos, (0,0)) < self.zero_crossing_radius:
-                logging.info("trying to move to 0! get outta here.")
-                intersections = get_circle_line_intersections(move.start_pos, move.end_pos, self.zero_crossing_radius)
-                if len(intersections) == 0:
-                    logging.error("no intersections found!")
-                move.end_pos = (intersections[-1][0], intersections[-1][1], move.end_pos[2], move.end_pos[3])
-                logging.info("intersections: %s", intersections)
-                logging.info("new end pos: %s", move.end_pos)
 
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
@@ -423,7 +415,14 @@ class PolarXZKinematics:
             if (
                 start_circle_index == mid_circle_index == end_circle_index
             ):  # if we don't cross a velocity milestone
-                return ((move.start_pos, move.end_pos),)
+                if distance(move.end_pos, (0,0)) < self.zero_crossing_radius:
+                    logging.info("trying to move to 0! get outta here.")
+                    intersections = get_circle_line_intersections(move.start_pos, move.end_pos, self.zero_crossing_radius)
+                    if len(intersections) == 0:
+                        logging.error("no intersections found!")
+                    logging.info("intersections: %s", intersections)
+                    logging.info("new end pos: %s", move.end_pos)
+                return ((move.start_pos, (intersections[-1][0], intersections[-1][1], move.end_pos[2], move.end_pos[3])),)
 
             logging.info("start_circle_index: %s", start_circle_index)
             logging.info("velocity_milestones: %s", velocity_milestones)
