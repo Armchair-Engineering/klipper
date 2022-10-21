@@ -233,16 +233,16 @@ class PolarXZKinematics:
             logging.info("hi.position_endstop: %s", hi.position_endstop)
             logging.info("position_min: %s", position_min)
             logging.info("position_max: %s", position_max)
-            if axis == 0:
-                if hi.positive_dir:
-                    forcepos[axis] = self.zero_crossing_radius
-                else:
-                    forcepos[axis] = -self.zero_crossing_radius
+            # if axis == 0:
+            #     if hi.positive_dir:
+            #         forcepos[axis] = self.zero_crossing_radius
+            #     else:
+            #         forcepos[axis] = -self.zero_crossing_radius
+            # else:
+            if hi.positive_dir:
+                forcepos[axis] -= hi.position_endstop - position_min + self.zero_crossing_radius
             else:
-                if hi.positive_dir:
-                    forcepos[axis] -= hi.position_endstop - position_min
-                else:
-                    forcepos[axis] += position_max - hi.position_endstop
+                forcepos[axis] += position_max - hi.position_endstop + self.zero_crossing_radius
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
 
