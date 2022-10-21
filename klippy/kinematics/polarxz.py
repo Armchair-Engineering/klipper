@@ -206,36 +206,38 @@ class PolarXZKinematics:
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
         axes_to_home = []
-
+        
         if  0 in homing_axes or 1 in homing_axes:
             axes_to_home.append('x')
         if 2 in homing_axes:
             axes_to_home.append('z')
         
-        for named_axis in axes_to_home:
-            rail = self.rail_lookup[named_axis]
-            axis_index = None
-            if named_axis == 'x':
-                axis_index = 0
-            elif named_axis == 'z':
-                axis_index = 2
+        for axis in homing_axes:
+            rail = self.rails[axis]
+            if axis == 1: #1 is z
+                axis = 2
             # Determine movement
             position_min, position_max = rail.get_range()
             hi = rail.get_homing_info()
             homepos = [None, None, None, None]
-            homepos[axis_index] = hi.position_endstop
+            homepos[axis] = hi.position_endstop
+            logging.info("homepos: %s", homepos)
             forcepos = list(homepos)
-
-            if named_axis == 'x':
+            logging.info("forcepos: %s", forcepos)
+            logging.info("hi.positive_dir: %s", hi.positive_dir)
+            logging.info("hi.position_endstop: %s", hi.position_endstop)
+            logging.info("position_min: %s", position_min)
+            logging.info("position_max: %s", position_max)
+            if axis == 0:
                 if hi.positive_dir:
-                    forcepos[axis_index] = self.zero_crossing_radius
+                    forcepos[axis] = self.zero_crossing_radius
                 else:
-                    forcepos[axis_index] = -self.zero_crossing_radius
+                    forcepos[axis] = -self.zero_crossing_radius
             else:
                 if hi.positive_dir:
-                    forcepos[axis_index] -= hi.position_endstop - position_min
+                    forcepos[axis] -= hi.position_endstop - position_min
                 else:
-                    forcepos[axis_index] += position_max - hi.position_endstop
+                    forcepos[axis] += position_max - hi.position_endstop
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
 
