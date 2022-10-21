@@ -348,19 +348,21 @@ class PolarXZKinematics:
             stepy = dy / num_segments
             px = move.start_pos[0] + stepx
             py = move.start_pos[1] + stepy
-            for i in range(num_segments):
+            logging.info("num_segments: %s" % num_segments)
+            for i in range(int(num_segments)):
             
                 points.append((round(px,10),round(py,10)))
                 px += stepx
                 py += stepy
 
             points = [(move.start_pos[0],move.start_pos[1])] + points
+            logging.info("points: %s" % points)
             xy_moves = []
             while len(points) != 1:
                 start = points.pop(0)
                 end = points[0]
                 xy_moves.append((start, end))
-
+            logging.info("xy_moves: %s" % xy_moves)
             total_z_dist = move.end_pos[2] - move.start_pos[2]
             total_e_dist = move.end_pos[3] - move.start_pos[3]
             actual_moves = []
