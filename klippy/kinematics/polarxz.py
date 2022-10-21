@@ -128,6 +128,7 @@ class PolarXZKinematics:
         self.steppers = [self.stepper_bed] + [
                 s for r in self.rails for s in r.get_steppers()
         ]
+        self.toolhead = toolhead
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -320,7 +321,9 @@ class PolarXZKinematics:
                              self.max_z_accel * z_ratio)
 
     def segment_move(self, move):
-        #TODO maybe velocity scale the moves here for efficiency? idk
+        logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
+        if self.toolhead.special_queuing_state == 'Drip':
+            return []
         if move.axes_d[0] or move.axes_d[1]:
         # def testit(move):
             logging.info("segmenting move!")
