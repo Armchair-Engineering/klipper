@@ -284,6 +284,11 @@ class PolarXZKinematics:
             dtheta = polar_end[1] - polar_start[1]
 
             delta_degrees = math.degrees(dtheta)
+            if abs(delta_degrees) > 180:
+                if delta_degrees > 0:
+                    delta_degrees = delta_degrees - 360
+                else:
+                    delta_degrees = delta_degrees + 360    
             if delta_degrees == 0:
                 step_ratio = self.max_accel / self.max_rotational_accel
             else:
@@ -328,12 +333,39 @@ class PolarXZKinematics:
             z_ratio = move.move_d / abs(move.axes_d[2])
             move.limit_speed(self.max_z_velocity * z_ratio,
                              self.max_z_accel * z_ratio)
+    # def zero_cross(self, move):
+    #     cart_start_x = move.start_pos[0]
+    #     cart_start_y = move.start_pos[1]
+    #     cart_end_x = move.end_pos[0]
+    #     cart_end_y = move.end_pos[1]
+    #     delta_x = cart_end_x - cart_start_x
+    #     delta_y = cart_end_y - cart_start_y
+    #     if delta_x == 0:
+    #         riserun = 0
+    #     else:
+    #         riserun = delta_y / delta_x
+
+    #     #calculate y intercept
+    #     if riserun == 0:
+    #         riserun2 = 90
+    #     else:
+    #         riserun2 = -1 / riserun
+
+    #     y_intercept = cart_start_y - (riserun * cart_start_x)
+    #     x_intersect = (y_intercept) / (riserun2 - riserun)
+    #     y_intersect = riserun * x_intersect + y_intercept
+    #     closest_to_origin = (x_intersect, y_intersect)
+    #     if sqrdistance(closest_to_origin, (0,0)) <= self.zero_crossing_radius**2:
+    #         logging.info('hoooo boy, we crossin the zero')
+    #         logging.info('move from %s to %s crosses zero' % (move.start_pos, move.end_pos))
+
 
     # def segment_move(self, move):
     #     logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
     #     if self.toolhead.special_queuing_state == 'Drip':
     #         return []
     #     if move.axes_d[0] or move.axes_d[1]:
+    #         moves = self.zero_cross(move)
     #         logging.info('segmenting move!')
     #         logging.info('move: %s, ', (move.start_pos, move.end_pos))
     #         total_move_dist = distance(move.start_pos, move.end_pos)
@@ -415,10 +447,10 @@ class PolarXZKinematics:
                 riserun2 = -1 / riserun
             
             y_intercept = cart_start_y - (riserun * cart_start_x)
-            #calculate x intercept
-            #line1 = y = riserun * x + y_intercept
-            #line2 = y = riserun2 * x + 0
-            #calcualate intersection of two lines
+            # calculate x intercept
+            # line1 = y = riserun * x + y_intercept
+            # line2 = y = riserun2 * x + 0
+            # calcualate intersection of two lines
             x_intersect = (y_intercept) / (riserun2 - riserun)
             y_intersect = riserun * x_intersect + y_intercept
             closest_to_origin = (x_intersect, y_intersect)
