@@ -233,12 +233,17 @@ class PolarXZKinematics:
             logging.info("hi.position_endstop: %s", hi.position_endstop)
             logging.info("position_min: %s", position_min)
             logging.info("position_max: %s", position_max)
+
             if hi.positive_dir: 
                 #klipper dies if we do a move at 0,0, so offset position by microstep distance
                 #TODO - maybe only offset if it's an x move
                 forcepos[axis] -= hi.position_endstop - position_min - self.zero_crossing_radius
+                if forcepos[axis] < position_min:
+                    forcepos[axis] = position_min
             else:
                 forcepos[axis] += position_max - hi.position_endstop + self.zero_crossing_radius
+                if forcepos[axis] > position_max:
+                    forcepos[axis] = position_max
             # Perform homing
             homing_state.home_rails([rail], forcepos, homepos)
 
