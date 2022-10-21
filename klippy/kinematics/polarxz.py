@@ -373,7 +373,7 @@ class PolarXZKinematics:
             dy = move.end_pos[1] - move.start_pos[1]
             move_time = move.min_move_t
             num_segments = self.segments_per_second * move_time
-            if num_segments < 0:
+            if num_segments <= 1:
                 return []
             segment_dist = total_move_dist / num_segments
             if segment_dist < self.min_segment_length:
