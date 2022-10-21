@@ -370,14 +370,14 @@ class PolarXZKinematics:
             current_z_pos = move.start_pos[2]
             current_e_pos = move.start_pos[3]
             move_dist = segment_dist
-            for move in xy_moves:
+            for xy_move in xy_moves:
                 z_dist = move_dist / total_move_dist * total_z_dist
                 e_dist = move_dist / total_move_dist * total_e_dist
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
                 actual_moves.append((
-                        (round(move[0][0],10), round(move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
-                        (round(move[1][0],10), round(move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
+                        (round(xy_move[0][0],10), round(xy_move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
+                        (round(xy_move[1][0],10), round(xy_move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
                 ))
             leftover = round(num_segments % 1, 10)
             if leftover > 0:
