@@ -388,6 +388,7 @@ class ToolHead:
             if not self.can_pause:
                 self.need_check_stall = self.reactor.NEVER
                 return
+            logging.info('stalling...')
             eventtime = self.reactor.pause(eventtime + min(1., stall_time))
         if not self.special_queuing_state:
             # In main state - defer stall checking until needed
