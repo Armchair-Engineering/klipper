@@ -315,7 +315,10 @@ class PolarXZKinematics:
                 intersections = get_circle_line_intersections(move.start_pos, move.end_pos, self.zero_crossing_radius)
                 if len(intersections) == 0:
                     logging.error("no intersections found!")
-                move.end_pos = (intersections[-1][0], intersections[-1][1], move.end_pos[2], move.end_pos[3])
+                move.end_pos[0] = intersections[-1][0]
+                move.end_pos[1] = intersections[-1][1]
+                logging.info("intersections: %s" % intersections)
+                logging.info("new end pos: %s" % move.end_pos)
 
         if move.axes_d[2]:
             if end_pos[2] < self.limit_z[0] or end_pos[2] > self.limit_z[1]:
