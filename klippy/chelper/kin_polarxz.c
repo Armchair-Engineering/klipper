@@ -52,12 +52,15 @@ polarxz_stepper_alloc(char type)
     memset(sk, 0, sizeof(*sk));
     if (type == '+') {
         sk->calc_position_cb = polarxz_stepper_plus_calc_position;
+        sk->active_flags = AF_X | AF_Z;
     } else if (type == '-') {
         sk->calc_position_cb = polarxz_stepper_minus_calc_position;
+        sk->active_flags = AF_X | AF_Z;
     } else if (type == 'a') {
         sk->calc_position_cb = polarxz_stepper_angle_calc_position;
         sk->post_cb = polarxz_stepper_angle_post_fixup;
+        sk->active_flags = AF_Y;
     }
-    sk->active_flags = AF_X | AF_Y | AF_Z;
+    
     return sk;
 }
