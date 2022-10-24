@@ -121,8 +121,8 @@ class PolarXZKinematics:
         rail_x.get_endstops()[0][0].add_stepper(rail_z.get_steppers()[0])
         rail_z.get_endstops()[0][0].add_stepper(rail_x.get_steppers()[0])
         self.stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
-        rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
-        rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
+        rail_x.setup_itersolve('corexz_stepper_alloc', b'+')
+        rail_z.setup_itersolve('corexz_stepper_alloc', b'-')
         self.rails = [rail_x, rail_z]
         self.rail_lookup = {'x': rail_x, 'z': rail_z}
         self.steppers = [self.stepper_bed] + [
