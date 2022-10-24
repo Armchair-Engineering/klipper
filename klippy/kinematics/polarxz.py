@@ -526,7 +526,9 @@ class PolarXZKinematics:
                     logging.info("intersections: %s", intersections)
                     logging.info("new end pos: %s", move.end_pos)
                     end_pos = (intersections[-1][0], intersections[-1][1], move.end_pos[2], move.end_pos[3])
-                return ((round(float(move.start_pos),10), round(float(end_pos),10)),)
+                end_pos = (round(end_pos[0],10), round(end_pos[1],10), round(end_pos[2],10), round(end_pos[3],10))
+                start_pos = (round(move.start_pos[0],10), round(move.start_pos[1],10), round(move.start_pos[2],10), round(move.start_pos[3],10))
+                return ((start_pos, end_pos),)
 
             logging.info("start_circle_index: %s", start_circle_index)
             logging.info("velocity_milestones: %s", velocity_milestones)
