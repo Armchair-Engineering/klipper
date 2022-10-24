@@ -314,6 +314,7 @@ class ProbeEndstopWrapper:
         kin = self.printer.lookup_object('toolhead').get_kinematics()
         for stepper in kin.get_steppers():
             if stepper.is_active_axis('z'):
+                logging.info('stepper: %s is active for z', stepper.get_name())
                 self.add_stepper(stepper)
     def raise_probe(self):
         toolhead = self.printer.lookup_object('toolhead')

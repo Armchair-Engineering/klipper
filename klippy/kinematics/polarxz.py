@@ -590,7 +590,6 @@ class PolarXZKinematics:
             #   grab [1] and put it at the front of an end list
             # if there's only one, put it to the end of start
             # at the end, we'll put start + end together for the full list of points
-            # maybe has an issue if you start at a lower radius and move through center to higher?
             #flatten values of intersections
             flattened_intersections = []
             for radius, intersection_subset in intersections.items():
