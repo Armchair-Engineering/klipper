@@ -155,6 +155,9 @@ class HomingMove:
         if self.printer.get_start_args().get('debuginput') is not None:
             return None
         for sp in self.stepper_positions:
+            logging.info("sp endstop name: %s", sp.endstop_name)
+            logging.info('sp start_pos: %s', sp.start_pos)
+            logging.info('sp halt_pos: %s', sp.halt_pos)
             if sp.start_pos == sp.trig_pos:
                 return sp.endstop_name
         return None
