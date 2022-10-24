@@ -442,8 +442,8 @@ class ToolHead:
                 self.extruder.check_move(move)
             self.commanded_pos[:] = move.end_pos
             self.move_queue.add_move(move)
-        if self.print_time > self.need_check_stall:
-            self._check_stall()
+            if self.print_time > self.need_check_stall:
+                self._check_stall()
     def manual_move(self, coord, speed):
         curpos = list(self.commanded_pos)
         for i in range(len(coord)):
