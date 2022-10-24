@@ -58,6 +58,6 @@ polarxz_stepper_alloc(char type)
         sk->calc_position_cb = polarxz_stepper_angle_calc_position;
         sk->post_cb = polarxz_stepper_angle_post_fixup;
     }
-    sk->active_flags = AF_X | AF_Y | AF_Z;
+    sk->active_flags = AF_X | AF_Y;
     return sk;
 }
