@@ -50,10 +50,10 @@ def get_circle_line_intersections(p1, p2, radius):
         x2 = ((D * dy) - (math.copysign(1, dy) * dx * math.sqrt(disc))) / (dr ** 2)
         y1 = ((-D * dx) + (abs(dy) * math.sqrt(disc))) / (dr ** 2)
         y2 = ((-D * dx) - (abs(dy) * math.sqrt(disc))) / (dr ** 2)
-        x1 = round(x1, 10)
-        x2 = round(x2, 10)
-        y1 = round(y1, 10)
-        y2 = round(y2, 10)
+        x1 = round(x1, 14)
+        x2 = round(x2, 14)
+        y1 = round(y1, 14)
+        y2 = round(y2, 14)
         intersection1 = (x1, y1)
         intersection2 = (x2, y2)
         if (
@@ -526,8 +526,8 @@ class PolarXZKinematics:
                     logging.info("intersections: %s", intersections)
                     logging.info("new end pos: %s", move.end_pos)
                     end_pos = (intersections[-1][0], intersections[-1][1], move.end_pos[2], move.end_pos[3])
-                end_pos = (round(end_pos[0],10), round(end_pos[1],10), round(end_pos[2],10), round(end_pos[3],10))
-                start_pos = (round(move.start_pos[0],10), round(move.start_pos[1],10), round(move.start_pos[2],10), round(move.start_pos[3],10))
+                end_pos = (round(end_pos[0],14), round(end_pos[1],14), round(end_pos[2],14), round(end_pos[3],14))
+                start_pos = (round(move.start_pos[0],14), round(move.start_pos[1],14), round(move.start_pos[2],14), round(move.start_pos[3],14))
                 return ((start_pos, end_pos),)
 
             logging.info("start_circle_index: %s", start_circle_index)
@@ -626,8 +626,8 @@ class PolarXZKinematics:
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
                 actual_moves.append((
-                        (round(move[0][0],10), round(move[0][1],10), round(current_z_pos,10), round(current_e_pos,10)),
-                        (round(move[1][0],10), round(move[1][1],10), round(new_z_pos,10), round(new_e_pos,10)),
+                        (round(move[0][0],14), round(move[0][1],14), round(current_z_pos,14), round(current_e_pos,14)),
+                        (round(move[1][0],14), round(move[1][1],14), round(new_z_pos,14), round(new_e_pos,14)),
                 ))
                 current_e_pos = new_e_pos
                 current_z_pos = new_z_pos
