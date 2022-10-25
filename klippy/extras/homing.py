@@ -118,12 +118,17 @@ class HomingMove:
             tt = trigger_times.get(sp.endstop_name, move_end_print_time)
             sp.note_home_end(tt)
         if probe_pos:
+            logging.info("probe haltpos: %s", haltpos)
+            logging.info("probe trigpos: %s", trigpos)
+            logging.info("probe over_steps: %s", over_steps)
             halt_steps = {sp.stepper_name: sp.halt_pos - sp.start_pos
                           for sp in self.stepper_positions}
             trig_steps = {sp.stepper_name: sp.trig_pos - sp.start_pos
                           for sp in self.stepper_positions}
+            logging.info('using trig steps')
             haltpos = trigpos = self.calc_toolhead_pos(kin_spos, trig_steps)
             if trig_steps != halt_steps:
+                logging.info('using halt steps')
                 haltpos = self.calc_toolhead_pos(kin_spos, halt_steps)
         else:
             haltpos = trigpos = movepos
