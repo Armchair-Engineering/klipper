@@ -120,12 +120,12 @@ class PolarXZKinematics:
         rail_z = stepper.PrinterRail(config.getsection('stepper_z'))
         logging.info('rail x endstops: %s', rail_x.get_endstops())
         logging.info('rail z endstops: %s', rail_z.get_endstops())
-        
+
         rail_x.get_endstops()[0][0].add_stepper(rail_z.get_steppers()[0])
         rail_z.get_endstops()[0][0].add_stepper(rail_x.get_steppers()[0])
         self.stepper_bed.setup_itersolve('polarxz_stepper_alloc', b'a')
-        rail_x.setup_itersolve('corexz_stepper_alloc', b'+')
-        rail_z.setup_itersolve('corexz_stepper_alloc', b'-')
+        rail_x.setup_itersolve('polarxz_stepper_alloc', b'+')
+        rail_z.setup_itersolve('polarxz_stepper_alloc', b'-')
         self.rails = [rail_x, rail_z]
         self.rail_lookup = {'x': rail_x, 'z': rail_z}
         self.steppers = [self.stepper_bed] + [
@@ -161,12 +161,14 @@ class PolarXZKinematics:
         self.bed_radius = self.axes_min[0]
     def get_steppers(self):
         return list(self.steppers)
+        
     def calc_position(self, stepper_positions):
         bed_angle = stepper_positions[self.steppers[0].get_name()]
         x_pos = stepper_positions[self.rails[0].get_name()]
         z_pos = stepper_positions[self.rails[1].get_name()]
         return [(0.5 * ((math.cos(bed_angle) * x_pos) + z_pos)),
             math.sin(bed_angle) * x_pos, (0.5 * (x_pos - z_pos))]
+
     def set_position(self, newpos, homing_axes):
         for s in self.steppers:
             s.set_position(newpos)

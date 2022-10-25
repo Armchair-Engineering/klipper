@@ -29,12 +29,34 @@ polarxz_stepper_angle_post_fixup(struct stepper_kinematics *sk)
         sk->commanded_pos -= 2 * M_PI;
 }
 
+static double
+polarxz_stepper_plus_calc_position(struct stepper_kinematics *sk
+                                   , struct move *m, double move_time)
+{
+    struct coord c = move_get_coord(m, move_time);
+    return (sqrt(c.x*c.x + c.y*c.y)) + c.z;
+}
+
+static double
+polarxz_stepper_minus_calc_position(struct stepper_kinematics *sk
+                                    , struct move *m, double move_time)
+{
+    struct coord c = move_get_coord(m, move_time);
+    return (sqrt(c.x*c.x + c.y*c.y)) - c.z;
+}
+
 struct stepper_kinematics * __visible
 polarxz_stepper_alloc(char type)
 {
     struct stepper_kinematics *sk = malloc(sizeof(*sk));
     memset(sk, 0, sizeof(*sk));
-    if (type == 'a') {
+    if (type == '+') {
+        sk->calc_position_cb = polarxz_stepper_plus_calc_position;
+        sk->active_flags = AF_X | AF_Y | AF_Z;
+    } else if (type == '-') {
+        sk->calc_position_cb = polarxz_stepper_minus_calc_position;
+        sk->active_flags = AF_X | AF_Y | AF_Z;
+    } else if (type == 'a') {
         sk->calc_position_cb = polarxz_stepper_angle_calc_position;
         sk->post_cb = polarxz_stepper_angle_post_fixup;
         sk->active_flags = AF_X | AF_Y;
