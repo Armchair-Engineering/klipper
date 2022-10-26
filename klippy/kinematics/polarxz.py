@@ -485,14 +485,15 @@ class PolarXZKinematics:
                 xy_moves.append((start, end))
             logging.info("xy_moves: %s" % xy_moves)
             total_z_dist = move_end_pos[2] - move_start_pos[2]
+            logging.info('total z dist: %s' % total_z_dist)
             total_e_dist = move_end_pos[3] - move_start_pos[3]
             actual_moves = []
             current_z_pos = move_start_pos[2]
             current_e_pos = move_start_pos[3]
-            move_dist = segment_dist
+            seg_ratio = segment_dist / move_dist
             for xy_move in xy_moves:
-                z_dist = move_dist / move_dist * total_z_dist
-                e_dist = move_dist / move_dist * total_e_dist
+                z_dist = seg_ratio * total_z_dist
+                e_dist = seg_ratio * total_e_dist
                 new_z_pos = current_z_pos + z_dist
                 new_e_pos = current_e_pos + e_dist
                 actual_moves.append((
