@@ -342,6 +342,7 @@ class PolarXZKinematics:
             z_ratio = move.move_d / abs(move.axes_d[2])
             move.limit_speed(self.max_z_velocity * z_ratio,
                              self.max_z_accel * z_ratio)
+                             
     def zero_cross(self, move, total_move_dist):
         cart_start_x = move.start_pos[0]
         cart_start_y = move.start_pos[1]
@@ -353,6 +354,8 @@ class PolarXZKinematics:
             return [((move.start_pos, move.end_pos), 1)]
         elif len(zero_radius_intersections) == 1:
             intersection = zero_radius_intersections[0]
+            if abs(intersection[0] - cart_start_x) < EPSILON and abs(intersection[1] - cart_end_x) < EPSILON:
+                return [((move.start_pos, move.end_pos), 1)]
             return [ ((move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3])), 1)]
         #2 intersections means moving through 0
         # 2 MOVE ZERO CROSSING
