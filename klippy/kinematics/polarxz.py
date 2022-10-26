@@ -440,7 +440,8 @@ class PolarXZKinematics:
             total_move_dist = distance(move.start_pos, move.end_pos)
             moves_and_ratios = self.zero_cross(move, total_move_dist)
             out_moves = []
-            for move, ratio in moves_and_ratios:
+            for tup in moves_and_ratios:
+                move, ratio = tup
                 segment_count = int(total_segments * ratio)
                 move_dist = total_move_dist * ratio
                 out_moves += self._segment_move(move, segment_count, move_dist)
