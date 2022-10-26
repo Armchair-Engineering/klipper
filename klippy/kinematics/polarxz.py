@@ -353,7 +353,7 @@ class PolarXZKinematics:
             return [((move.start_pos, move.end_pos), 1)]
         elif len(zero_radius_intersections) == 1:
             intersection = zero_radius_intersections[0]
-            return [ (move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3]), 1)]
+            return [ ((move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3])), 1)]
         #2 intersections means moving through 0
         # 2 MOVE ZERO CROSSING
         elif False: 
@@ -442,6 +442,7 @@ class PolarXZKinematics:
             out_moves = []
             logging.info('moves_and_ratios: %s', moves_and_ratios)
             for tup in moves_and_ratios:
+                
                 move, ratio = tup
                 segment_count = int(total_segments * ratio)
                 move_dist = total_move_dist * ratio
