@@ -350,7 +350,7 @@ class PolarXZKinematics:
 
         zero_radius_intersections = get_circle_line_intersections( (cart_start_x, cart_start_y), (cart_end_x, cart_end_y), self.zero_crossing_radius)
         if len(zero_radius_intersections) == 0:
-            return [(move, 1)]
+            return [((move.start_pos, move.end_pos), 1)]
         elif len(zero_radius_intersections) == 1:
             intersection = zero_radius_intersections[0]
             return [(move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3]), 1)]
