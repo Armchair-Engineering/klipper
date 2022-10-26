@@ -445,7 +445,9 @@ class PolarXZKinematics:
                 move_dist = total_move_dist * ratio
                 out_moves += self._segment_move(move, segment_count, move_dist)
             return out_moves
-            
+        else:
+            return []
+
     def _segment_move(self, move, num_segments, move_dist):
             move_start_pos = move[0]
             move_end_pos = move[1]
