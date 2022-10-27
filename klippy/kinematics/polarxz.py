@@ -360,7 +360,7 @@ class PolarXZKinematics:
             return [ ((move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3])), 1)]
         #2 intersections means moving through 0
         # 2 MOVE ZERO CROSSING
-        elif self.two_move_cross: 
+        elif self.two_move_crossing: 
 
             #moving through our zero radius, move 90 deg to incoming line
             #if we know we're zero crossing, the angle to start and to end will always be pi (180deg) apart
