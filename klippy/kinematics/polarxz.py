@@ -438,6 +438,7 @@ class PolarXZKinematics:
         if self.toolhead.special_queuing_state == 'Drip':
             return []
         if move.axes_d[0] or move.axes_d[1]:
+            logging.info('parent move: %s', (move.start_pos, move.end_pos))
             move_time = move.min_move_t
             total_segments = self.segments_per_second * move_time
             total_move_dist = distance(move.start_pos, move.end_pos)
