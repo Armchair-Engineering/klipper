@@ -445,11 +445,11 @@ class PolarXZKinematics:
 
     def segment_move(self, move):
         if self.time_segmentation:
-            return self.segment_move_time(move)
+            return self.segment_move_by_time(move)
         else:
             return self.segment_move_by_circles(move)
             
-    def time_segment_move(self, move):
+    def segment_move_by_time(self, move):
         logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
         if self.toolhead.special_queuing_state == 'Drip':
             return []
