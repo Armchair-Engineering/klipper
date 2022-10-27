@@ -157,7 +157,8 @@ class PolarXZKinematics:
         self.zero_crossing_radius = config.getfloat('zero_crossing_radius', 0.1, minval=0.0001, above=0.)
         self.min_segment_length = config.getfloat('min_segment_length', 0.2, minval=0.0001, above=0.)
         self.segments_per_second = config.getfloat('segments_per_second', 100, minval=0.0001, above=0.)
-
+        self.two_move_crossing = config.getboolean('two_move_crossing', False)
+        self.time_segmentation = config.getboolean('time_segmentation', False)
         self.bed_radius = self.axes_min[0]
     def get_steppers(self):
         return list(self.steppers)
@@ -359,7 +360,7 @@ class PolarXZKinematics:
             return [ ((move.start_pos, (intersection[0], intersection[1], move.end_pos[2], move.end_pos[3])), 1)]
         #2 intersections means moving through 0
         # 2 MOVE ZERO CROSSING
-        elif False: 
+        elif self.two_move_cross: 
 
             #moving through our zero radius, move 90 deg to incoming line
             #if we know we're zero crossing, the angle to start and to end will always be pi (180deg) apart
@@ -442,8 +443,13 @@ class PolarXZKinematics:
                 out_moves[-1] = ((out_moves[-1][0][0], end_pos), out_moves[-1][1])
             return out_moves
 
-
     def segment_move(self, move):
+        if self.time_segmentation:
+            return self.segment_move_time(move)
+        else:
+            return self.segment_move_by_circles(move)
+            
+    def time_segment_move(self, move):
         logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
         if self.toolhead.special_queuing_state == 'Drip':
             return []
@@ -524,7 +530,7 @@ class PolarXZKinematics:
 
 
 
-    def segment_move2(self, move):
+    def segment_move_by_circles(self, move):
         logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
         if self.toolhead.special_queuing_state == 'Drip':
             return []
