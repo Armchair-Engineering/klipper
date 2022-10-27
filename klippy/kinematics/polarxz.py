@@ -387,29 +387,29 @@ class PolarXZKinematics:
             incoming_point = polar_to_cartesian(self.zero_crossing_radius, incoming_angle)
             outgoing_angle = incoming_angle + math.pi
             outgoing_point = polar_to_cartesian(self.zero_crossing_radius, outgoing_angle)
-            side_angle = (outgoing_angle - incoming_angle) / 2
+            side_angle = (outgoing_angle - incoming_angle) / 2.
             side_point = polar_to_cartesian(self.zero_crossing_radius, side_angle)
             crossmove_1 = distance((incoming_point[0], incoming_point[1]),(side_point[0], side_point[1]))
             crossmove_2 = distance((side_point[0], side_point[1]),(outgoing_point[0], outgoing_point[1]))
             total_move_dist = total_move_dist
             total_outermove_dist = total_move_dist - crossmove_1 - crossmove_2
-            start_move_dist = end_move_dist = total_outermove_dist / 2
+            start_move_dist = end_move_dist = total_outermove_dist / 2.
 
             total_z = move.axes_d[2]
             total_e = move.axes_d[3]
-            start_move_ratio = start_move_dist / total_move_dist
+            start_move_ratio = start_move_dist / float(total_move_dist)
             move_1_z_dist = total_z * (start_move_ratio)
             move_1_e_dist = total_e * (start_move_ratio)
             
-            crossmove_1_ratio = crossmove_1 / total_move_dist
+            crossmove_1_ratio = crossmove_1 / float(total_move_dist)
             move_2_z_dist = total_z * (crossmove_1_ratio)
             move_2_e_dist = total_e * (crossmove_1_ratio)
 
-            crossmove_2_ratio = crossmove_2 / total_move_dist
+            crossmove_2_ratio = crossmove_2 / float(total_move_dist)
             move_3_z_dist = total_z * (crossmove_2_ratio)
             move_3_e_dist = total_e * (crossmove_2_ratio)
 
-            end_move_ratio = end_move_dist / total_move_dist
+            end_move_ratio = end_move_dist / float(total_move_dist)
             move_4_z_dist = total_z * (end_move_ratio)
             move_4_e_dist = total_e * (end_move_ratio)
 
@@ -431,28 +431,28 @@ class PolarXZKinematics:
             end_pos = move.end_pos
 
             return [((start_pos, incoming_pos), start_move_ratio), ((incoming_pos, side_pos), crossmove_1_ratio), ((side_pos, outgoing_pos), crossmove_2_ratio), ((outgoing_pos, end_pos), end_move_ratio)]
-            
 
-    # def segment_move(self, move):
-    #     logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
-    #     if self.toolhead.special_queuing_state == 'Drip':
-    #         return []
-    #     if move.axes_d[0] or move.axes_d[1]:
-    #         move_time = move.min_move_t
-    #         total_segments = self.segments_per_second * move_time
-    #         total_move_dist = distance(move.start_pos, move.end_pos)
-    #         moves_and_ratios = self.zero_cross(move, total_move_dist)
-    #         out_moves = []
-    #         logging.info('moves_and_ratios: %s', moves_and_ratios)
-    #         for tup in moves_and_ratios:
+
+    def segment_move(self, move):
+        logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
+        if self.toolhead.special_queuing_state == 'Drip':
+            return []
+        if move.axes_d[0] or move.axes_d[1]:
+            move_time = move.min_move_t
+            total_segments = self.segments_per_second * move_time
+            total_move_dist = distance(move.start_pos, move.end_pos)
+            moves_and_ratios = self.zero_cross(move, total_move_dist)
+            out_moves = []
+            logging.info('moves_and_ratios: %s', moves_and_ratios)
+            for tup in moves_and_ratios:
                 
-    #             move, ratio = tup
-    #             segment_count = int(total_segments * ratio)
-    #             move_dist = total_move_dist * ratio
-    #             out_moves += self._segment_move(move, segment_count, move_dist)
-    #         return out_moves
-    #     else:
-    #         return []
+                move, ratio = tup
+                segment_count = int(total_segments * ratio)
+                move_dist = total_move_dist * ratio
+                out_moves += self._segment_move(move, segment_count, move_dist)
+            return out_moves
+        else:
+            return []
 
     def _segment_move(self, move, num_segments, move_dist):
             move_start_pos = move[0]
@@ -513,7 +513,7 @@ class PolarXZKinematics:
 
 
 
-    def segment_move(self, move):
+    def segment_move2(self, move):
         logging.info("special_queuing_state: %s", self.toolhead.special_queuing_state)
         if self.toolhead.special_queuing_state == 'Drip':
             return []
