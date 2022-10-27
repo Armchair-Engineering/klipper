@@ -225,9 +225,15 @@ class PrinterProbe:
         # Probe bed sample_count times
         self.multi_probe_begin()
         positions = []
+        first_probe = True
         while len(positions) < sample_count:
             # Probe position
             pos = self._probe(speed)
+            if self.drop_first_result and first_probe:
+                first_probe = False
+                liftpos = [None, None, pos[2] + sample_retract_dist]
+                self._move(liftpos, lift_speed)
+                continue
             positions.append(pos)
             # Retract
             liftpos = [None, None, pos[2] + sample_retract_dist]
