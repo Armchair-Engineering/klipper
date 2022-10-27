@@ -3,7 +3,6 @@
 # Copyright (C) 2018-2021  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-from audioop import cross
 import stepper
 import sys
 import logging, math
@@ -350,6 +349,7 @@ class PolarXZKinematics:
         cart_end_y = move.end_pos[1]
 
         zero_radius_intersections = get_circle_line_intersections( (cart_start_x, cart_start_y), (cart_end_x, cart_end_y), self.zero_crossing_radius)
+
         if len(zero_radius_intersections) == 0:
             return [((move.start_pos, move.end_pos), 1)]
         elif len(zero_radius_intersections) == 1:
@@ -379,16 +379,20 @@ class PolarXZKinematics:
 
         # 4 MOVE ZERO CROSSING
         else: 
-
+            #sort zero_radius_intersections by distance from start_pos
+            zero_radius_intersections.sort(key=lambda x: sqrdistance((x), move.start_pos))
             #moving through our zero radius, move 90 deg to incoming line
             #if we know we're zero crossing, the angle to start and to end will always be pi (180deg) apart
             #we want to find a point perpendicular to the line between start and end, at a distance of self.zero_crossing_radius
             incoming_angle = math.atan2(zero_radius_intersections[0][1], zero_radius_intersections[0][0])
             incoming_point = polar_to_cartesian(self.zero_crossing_radius, incoming_angle)
+            incoming_point = (round(incoming_point[0], 10), round(incoming_point[1], 10))
             outgoing_angle = incoming_angle + math.pi
             outgoing_point = polar_to_cartesian(self.zero_crossing_radius, outgoing_angle)
+            outgoing_point = (round(outgoing_point[0], 10), round(outgoing_point[1], 10))
             side_angle = (outgoing_angle - incoming_angle) / 2.
             side_point = polar_to_cartesian(self.zero_crossing_radius, side_angle)
+            side_point = (round(side_point[0], 10), round(side_point[1], 10))
             crossmove_1 = distance((incoming_point[0], incoming_point[1]),(side_point[0], side_point[1]))
             crossmove_2 = distance((side_point[0], side_point[1]),(outgoing_point[0], outgoing_point[1]))
             total_move_dist = total_move_dist
@@ -429,8 +433,14 @@ class PolarXZKinematics:
             new_z = new_z + move_4_z_dist
             new_e = new_e + move_4_e_dist
             end_pos = move.end_pos
-
-            return [((start_pos, incoming_pos), start_move_ratio), ((incoming_pos, side_pos), crossmove_1_ratio), ((side_pos, outgoing_pos), crossmove_2_ratio), ((outgoing_pos, end_pos), end_move_ratio)]
+            out_moves = [((start_pos, incoming_pos), start_move_ratio), ((incoming_pos, side_pos), crossmove_1_ratio), ((side_pos, outgoing_pos), crossmove_2_ratio), ((outgoing_pos, end_pos), end_move_ratio)]
+            if abs(out_moves[0][0][0][0] - start_pos[0]) < EPSILON and abs(out_moves[0][0][0][1] - start_pos[1]) < EPSILON:
+                out_moves.pop(0)
+                out_moves[0] = ((start_pos, out_moves[0][0][1]), out_moves[0][1])
+            if abs(out_moves[-1][0][0][0] - end_pos[0]) < EPSILON and abs(out_moves[-1][0][0][1] - end_pos[1]) < EPSILON:
+                out_moves.pop(-1)
+                out_moves[-1] = ((out_moves[-1][0][0], end_pos), out_moves[-1][1])
+            return out_moves
 
 
     def segment_move(self, move):
