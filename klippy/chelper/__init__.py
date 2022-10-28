@@ -244,6 +244,7 @@ defs_all = [
     defs_kin_corexy,
     defs_kin_corexz,
     defs_kin_delta,
+    defs_kin_deltesian,
     defs_kin_polar,
     defs_kin_polarxz,
     defs_kin_rotary_delta,
