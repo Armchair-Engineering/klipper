@@ -238,6 +238,8 @@ class PolarXZKinematics:
             hi = rail.get_homing_info()
             homepos = [None, None, None, None]
             homepos[axis] = hi.position_endstop
+            if axis == 0:
+                homepos[1] = 0.
             logging.info("homepos: %s", homepos)
             forcepos = list(homepos)
             logging.info("forcepos: %s", forcepos)
