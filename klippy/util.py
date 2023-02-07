@@ -139,7 +139,7 @@ def get_git_version(from_file=True):
     # Obtain version info from "git" program
     gitdir = os.path.join(klippy_src, '..')
     prog = ('git', '-C', gitdir, 'describe', '--always',
-            '--tags', '--long', '--dirty')
+            '--tags', '--dirty')
     try:
         process = subprocess.Popen(prog, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
@@ -155,3 +155,4 @@ def get_git_version(from_file=True):
     if from_file:
         return get_version_from_file(klippy_src)
     return "?"
+#git -C /home/pi/klipper describe --always --tags --long --dirty

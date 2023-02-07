@@ -28,6 +28,41 @@ def polar_crosses_zero(p1, p2):
 def get_quadrant_crosses(p1, p2):
     return int(abs(p2[1] - p1[1]) // HALF_PI)
     
+def get_circle_line_intersections_new(p1, p2, dist):
+    #find points on a line that are a given distance from origin
+    intersections = []
+    x1 = p1[0]
+    y1 = p1[1]
+    x2 = p2[0]
+    y2 = p2[1]
+
+    m = (y2 - y1) / (x2 - x1)
+    #calculate y intercept
+    b = y1 - m * x1
+    new_x1 = (-(m * x1 + b) + math.sqrt((m * x1 + b)**2 - dist**2)) / 2
+    new_x2 = (-(m * x1 + b) - math.sqrt((m * x1 + b)**2 - dist**2)) / 2
+    new_y1 = m * new_x1 + b
+    new_y2 = m * new_x2 + b
+    
+    intersection1 = (new_x1, new_y1)
+    intersection2 = (new_x2, new_y2)
+
+
+    if (
+        p1[0] <= intersection1[0] <= p2[0] or p2[0] <= intersection1[0] <= p1[0]
+    ) and (
+        p1[1] <= intersection1[1] <= p2[1] or p2[1] <= intersection1[1] <= p1[1]
+    ):
+        intersections.append(intersection1)
+    if (
+        p1[0] <= intersection2[0] <= p2[0] or p2[0] <= intersection2[0] <= p1[0]
+    ) and (
+        p1[1] <= intersection2[1] <= p2[1] or p2[1] <= intersection2[1] <= p1[1]
+    ):
+        intersections.append(intersection2)
+        
+    return intersections
+
 def get_circle_line_intersections(p1, p2, radius):
     # calculate the intersection points of a line and circle
     # https://stackoverflow.com/questions/1073336/circle-line-collision-detection
