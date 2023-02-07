@@ -135,11 +135,7 @@ def get_version_from_file(klippy_src):
 
 def get_git_version(from_file=True):
     klippy_src = os.path.dirname(__file__)
-    try:
-        if from_file:
-            return get_version_from_file(klippy_src)
-    except:
-        logging.debug("Exception on read .version, trying git:")
+
     # Obtain version info from "git" program
     gitdir = os.path.join(klippy_src, '..')
     prog = ('git', '-C', gitdir, 'describe', '--always',
@@ -156,4 +152,6 @@ def get_git_version(from_file=True):
     except:
         logging.debug("Exception on run: %s", traceback.format_exc())
 
+    if from_file:
+        return get_version_from_file(klippy_src)
     return "?"
