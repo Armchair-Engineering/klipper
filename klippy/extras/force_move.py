@@ -49,7 +49,7 @@ def calc_move_time_polar(angle, speed, accel):
         angle = 0
     if accel == 0:
         accel = 10
-    segmentation_angle_degs = 10
+    segmentation_angle_degs = 90
     num_segments = int(angle / float(segmentation_angle_degs))
     if angle % segmentation_angle_degs != 0:
         num_segments += 1
