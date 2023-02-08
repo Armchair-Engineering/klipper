@@ -152,6 +152,10 @@ defs_kin_polarxz = """
     struct stepper_kinematics *polarxz_stepper_alloc(char type);
 """
 
+defs_kin_polarbed = """
+    struct stepper_kinematics *polarbed_stepper_alloc(char type);
+"""
+
 defs_kin_rotary_delta = """
     struct stepper_kinematics *rotary_delta_stepper_alloc(
         double shoulder_radius, double shoulder_height
@@ -247,6 +251,7 @@ defs_all = [
     defs_kin_deltesian,
     defs_kin_polar,
     defs_kin_polarxz,
+    defs_kin_polarbed,
     defs_kin_rotary_delta,
     defs_kin_winch,
     defs_kin_extruder,

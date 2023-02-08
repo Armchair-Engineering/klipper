@@ -56,7 +56,7 @@ class ForceMove:
         self.stepper_kinematics = ffi_main.gc(
             ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
         self.polar_bed_stepper_kinematics = ffi_main.gc(
-            ffi_lib.polarbed_stepper_alloc(b'a'), ffi_lib.free)
+            ffi_lib.polarxz_stepper_alloc(b'a'), ffi_lib.free)
         # Register commands
         gcode = self.printer.lookup_object('gcode')
         gcode.register_command('STEPPER_BUZZ', self.cmd_STEPPER_BUZZ,
