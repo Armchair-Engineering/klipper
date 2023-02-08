@@ -73,16 +73,16 @@ def calc_move_time_polar(angle, speed, accel):
         cartesian_end = (round(cartesian_end[0],10), round(cartesian_end[1],10))
         x_move = cartesian_end[0] - cartesian_start[0]
         y_move = cartesian_end[1] - cartesian_start[1]
-        # total_move_dist = math.sqrt(x_move**2 + y_move**2)
-        # inv_dist = 1. / total_move_dist
-        # x_ratio = x_move * inv_dist
-        # y_ratio = y_move * inv_dist
-        x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
-        y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
-        if x_move < 0:
-            x_ratio = -x_ratio
-        if y_move < 0:
-            y_ratio = -y_ratio
+        total_move_dist = math.sqrt(x_move**2 + y_move**2)
+        inv_dist = 1. / total_move_dist
+        x_ratio = x_move * inv_dist
+        y_ratio = y_move * inv_dist
+        # x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
+        # y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
+        # if x_move < 0:
+        #     x_ratio = -x_ratio
+        # if y_move < 0:
+        #     y_ratio = -y_ratio
         print("moving from %s to %s" % (cartesian_start, cartesian_end))
         #how long it takes to get up to cruising speed
         angle_delta_degs = math.degrees(angle_delta)
