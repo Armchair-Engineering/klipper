@@ -12,14 +12,17 @@ polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move 
 {
     struct coord c = move_get_coord(m, move_time);
     // XXX - handle x==y==0
-    
-    double angle = atan2(c.y, c.x);
-    // if (angle - sk->commanded_pos == M_PI) {
-    //     if (angle < 0)
-    //         angle = -M_PI;
-    //     else
-    //         angle = M_PI;
-    // }
+    double x = c.x - 100;
+    double y = c.y - 100;
+    if (x == 0 && y == 0)
+        errorf("polarbed_stepper_angle_calc_position: x==y==0");
+    double angle = atan2(y, x);
+    if (angle - sk->commanded_pos == M_PI) {
+        if (angle < 0)
+            angle = -M_PI;
+        else
+            angle = M_PI;
+    }
     
     return angle;
 }
