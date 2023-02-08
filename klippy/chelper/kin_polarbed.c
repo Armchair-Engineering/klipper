@@ -20,7 +20,7 @@ polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move 
         else
             angle = M_PI;
     }
-    errorf("angle: %d", angle);
+    
     return angle;
 }
 
