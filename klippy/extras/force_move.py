@@ -27,53 +27,93 @@ def calc_move_time(dist, speed, accel):
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
     return axis_r, accel_t, cruise_t, speed
-    
+
+def distance(p1, p2):
+    return math.sqrt(((p2[0] - p1[0]) ** 2) + ((p2[1] - p1[1]) ** 2))
+
 def cartesian_to_polar(x, y):
     return (math.sqrt(x**2 + y**2), math.atan2(y, x))
 
 
 def polar_to_cartesian(r, theta):
     return (r * math.cos(theta), r * math.sin(theta))
-def calc_move_time_polar(dist, speed, accel):
-    #dist in degs, speed in deg/s and accel in deg/s/s
+
+
+
+def calc_move_time_polar(angle, speed, accel):
+    #angle in degs, speed in deg/s and accel in deg/s/s
     #same as calc_move_time_polar, but axis_r (normalized move vector) needs to match such that 
     #   only the bed moves the given distance
-    if not dist:
-        dist = 0
-    ending_angle = math.radians(dist)
-    cartesian_start = (10,0)
-    cartesian_end = polar_to_cartesian(10, ending_angle)
-    x_move = cartesian_end[0] - cartesian_start[0]
-    y_move = cartesian_end[1] - cartesian_start[1]
-    dist = math.sqrt(x_move**2 + y_move**2)
-    inv_dist = 1. / dist
-    x_ratio = x_move * inv_dist
-    y_ratio = y_move * inv_dist
-    # x moves 1, y moves 1. ratio is 50 for x, 50 for y
-    # x moves 1, y moves 0. ratio is 100 for x, 0 for y
-    # x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
-    # y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
-    # if x_move < 0:
-    #     x_ratio = -x_ratio
-    # if y_move < 0:
-    #     y_ratio = -y_ratio
-    logging.info("force move calculated pos: %s", (x_move, y_move))
-    logging.info("force move ratios: %s", (x_ratio, y_ratio))
-
-    if not accel:
-        return (x_ratio, y_ratio), 0., dist / speed, speed
-    #dist = 90, accel = 10, velocity=5
-    # max_cruise_v2 = 900
-    #accel_t = 5 / 10 = .5
-    #accel_decel_d = .5 * 5 = 2.5
-    #cruise_t = (90 - 2.5) / 5 = 16.5
-    max_cruise_v2 = dist * accel
+    RADIUS = 10
+    if not angle:
+        angle = 0
+    if accel == 0:
+        accel = 10
+    segmentation_angle_degs = 45
+    num_segments = angle // segmentation_angle_degs
+    cartesian_start = (RADIUS,0)
+    max_cruise_v2 = angle * accel
+    moves = []
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
-    accel_t = speed / accel
-    accel_decel_d = accel_t * speed
-    cruise_t = (dist - accel_decel_d) / speed
-    return (x_ratio, y_ratio), accel_t, cruise_t, speed
+    cur_speed = 0
+    state = "accelerating"
+    for i in range(num_segments):
+        is_last = i == num_segments - 1
+        start_angle_degs = i * segmentation_angle_degs
+        end_angle_degs = (i + 1) * segmentation_angle_degs
+        if end_angle_degs > angle:
+            end_angle_degs = angle
+        start_angle = math.radians(start_angle_degs)
+        ending_angle = math.radians(end_angle_degs)
+        angle_delta = ending_angle - start_angle
+        cartesian_end = polar_to_cartesian(RADIUS, ending_angle)
+        cartesian_end = (round(cartesian_end[0],10), round(cartesian_end[1],10))
+        x_move = cartesian_end[0] - cartesian_start[0]
+        y_move = cartesian_end[1] - cartesian_start[1]
+        total_move_dist = math.sqrt(x_move**2 + y_move**2)
+        inv_dist = 1. / total_move_dist
+        x_ratio = x_move * inv_dist
+        y_ratio = y_move * inv_dist
+        print("moving from %s to %s" % (cartesian_start, cartesian_end))
+        #how long it takes to get up to cruising speed
+        angle_delta_degs = math.degrees(angle_delta)
+        if state == "cruising":
+            decel_t = cur_speed / accel
+            accel_t = 0
+            speed_left = 0 - cur_speed
+            accel_decel_d = decel_t * speed_left #how far we have to spin to get up to speed
+            if is_last:
+                state = "decelerating"
+                accel_t = decel_t
+        else:
+            speed_left = speed - cur_speed
+            accel_t = speed_left / accel
+            accel_decel_d = accel_t * speed_left #how far we have to spin to get up to speed
+        
+        if abs(accel_decel_d) > angle_delta_degs: #if we won't get up to speed before we hit the end of the move
+            if state == "cruising":
+                state = "decelerating"
+            cruise_t = 0 # we won't be cruising at all
+            accel_t = math.sqrt(angle_delta_degs / accel)
+            if state == "accelerating":
+                cur_speed = cur_speed + (accel * accel_t) #add acceled speed
+            else:
+                cur_speed = cur_speed - (accel * accel_t) #substract acceled speed
+        else:
+            if state == "accelerating":
+                state = "cruising"
+                cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
+            elif state == "cruising":
+                cruise_t = (angle_delta_degs) / speed
+            elif state == "decelerating":
+                cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
+            cur_speed = speed
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, speed)
+        moves.append(move)
+        cartesian_start = cartesian_end
+   
+    return moves
 
 class ForceMove:
     def __init__(self, config):
@@ -136,14 +176,18 @@ class ForceMove:
         
         prev_trapq = stepper.set_trapq(self.trapq)
         if is_polar_bed:
-            stepper.set_position((110., 100., 0.))
+            stepper.set_position((10., 0., 0.))
         else:
             stepper.set_position((0., 0., 0.))
         if is_polar_bed:
-            axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
-            print_time = toolhead.get_last_move_time()
-            self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
-                            110., 100., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
+            moves = calc_move_time_polar(dist, speed, accel)
+            for move in moves:
+                print_time = toolhead.get_last_move_time()
+                start_pos = (10., 0., 0.)
+                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
+                self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
+                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
+                start_pos = (start_pos[0] + end_x, start_pos[1] + end_y, 0.)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
