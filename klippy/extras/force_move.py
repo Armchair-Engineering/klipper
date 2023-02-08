@@ -27,6 +27,7 @@ def calc_move_time(dist, speed, accel):
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
     return axis_r, accel_t, cruise_t, speed
+    
 def cartesian_to_polar(x, y):
     return (math.sqrt(x**2 + y**2), math.atan2(y, x))
 
@@ -45,21 +46,30 @@ def calc_move_time_polar(dist, speed, accel):
     # breakpoint()
     x_move = cartesian_end[0] - cartesian_start[0]
     y_move = cartesian_end[1] - cartesian_start[1]
+    # x moves 1, y moves 1. ratio is 50 for x, 50 for y
+    # x moves 1, y moves 0. ratio is 100 for x, 0 for y
+    x_ratio = round(x_move / (x_move + y_move), 10)
+    y_ratio = round(y_move / (x_move + y_move), 10)
+    breakpoint()
     normalized_x = round(x_move / math.sqrt(x_move**2 + y_move**2), 10)
     normalized_y = round(y_move / math.sqrt(x_move**2 + y_move**2), 10)
     logging.info("force move calculated pos, unnormalized: %s", (x_move, y_move))
     logging.info("force move calced pos: %s", (normalized_x, normalized_y))
 
     if not accel:
-        return (normalized_x, normalized_y), 0., dist / speed, speed
-
+        return (x_ratio, y_ratio), 0., dist / speed, speed
+    #dist = 90, accel = 10, velocity=5
+    # max_cruise_v2 = 900
+    #accel_t = 5 / 10 = .5
+    #accel_decel_d = .5 * 5 = 2.5
+    #cruise_t = (90 - 2.5) / 5 = 16.5
     max_cruise_v2 = dist * accel
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
     accel_t = speed / accel
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
-    return (normalized_x, normalized_y), accel_t, cruise_t, speed
+    return (x_ratio, y_ratio), accel_t, cruise_t, speed
 
 class ForceMove:
     def __init__(self, config):
