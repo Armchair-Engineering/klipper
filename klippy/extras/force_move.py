@@ -189,7 +189,7 @@ class ForceMove:
                 end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
                 self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
-                start_pos = (start_pos[0] + end_x, start_pos[1] + end_y, 0.)
+                start_pos = (end_x, end_y, 0.)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
