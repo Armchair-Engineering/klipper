@@ -70,21 +70,21 @@ def calc_move_time_polar(angle, speed, accel):
     logging.info("force move calced pos: %s", (normalized_x, normalized_y))
 
     if not accel:
-        return (x_ratio, y_ratio), 0., angle / speed, speed
+        return (x_ratio, y_ratio), 0., dist / speed, speed
     #dist = 90, accel = 10, velocity=5
     # max_cruise_v2 = 900
     #accel_t = 5 / 10 = .5
     #accel_decel_d = .5 * 5 = 2.5
     #cruise_t = (90 - 2.5) / 5 = 16.5
-    max_cruise_v2 = angle * accel
+    max_cruise_v2 = dist * accel
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
     accel_t = speed / accel
     accel_decel_d = accel_t * speed
-    cruise_t = (angle - accel_decel_d) / speed
+    cruise_t = (dist - accel_decel_d) / speed
     move = cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, accel_t, speed
     moves.append(move)
-    return moves
+    return 
 
 class ForceMove:
     def __init__(self, config):
