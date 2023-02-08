@@ -4,6 +4,7 @@
 #include "compiler.h"  // __visible
 #include "itersolve.h" // struct stepper_kinematics
 #include "trapq.h"     // move_get_coord
+#include "pyhelper.h" // errorf
 
 static double
 polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
@@ -19,6 +20,7 @@ polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move 
         else
             angle = M_PI;
     }
+    errorf("angle: %d", angle);
     return angle;
 }
 
