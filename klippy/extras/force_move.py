@@ -45,14 +45,18 @@ def calc_move_time_polar(dist, speed, accel):
     cartesian_end = polar_to_cartesian(10, ending_angle)
     x_move = cartesian_end[0] - cartesian_start[0]
     y_move = cartesian_end[1] - cartesian_start[1]
+    dist = math.sqrt(x_move**2 + y_move**2)
+    inv_dist = 1. / dist
+    x_ratio = x_move * inv_dist
+    y_ratio = y_move * inv_dist
     # x moves 1, y moves 1. ratio is 50 for x, 50 for y
     # x moves 1, y moves 0. ratio is 100 for x, 0 for y
-    x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
-    y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
-    if x_move < 0:
-        x_ratio = -x_ratio
-    if y_move < 0:
-        y_ratio = -y_ratio
+    # x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
+    # y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
+    # if x_move < 0:
+    #     x_ratio = -x_ratio
+    # if y_move < 0:
+    #     y_ratio = -y_ratio
     normalized_x = round(x_move / math.sqrt(x_move**2 + y_move**2), 10)
     normalized_y = round(y_move / math.sqrt(x_move**2 + y_move**2), 10)
     logging.info("force move calculated pos, unnormalized: %s", (x_move, y_move))
