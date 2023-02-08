@@ -40,13 +40,14 @@ def polar_to_cartesian(r, theta):
 
 
 
-def calc_move_time_polar(dist, speed, accel):
+def calc_move_time_polar(angle, speed, accel):
     #dist in degs, speed in deg/s and accel in deg/s/s
     #same as calc_move_time_polar, but axis_r (normalized move vector) needs to match such that 
     #   only the bed moves the given distance
-    if not dist:
-        dist = 0
-    ending_angle = math.radians(dist)
+    moves = []
+    if not angle:
+        angle = 0
+    ending_angle = math.radians(angle)
     cartesian_start = (10,0)
     cartesian_end = polar_to_cartesian(10, ending_angle)
     x_move = cartesian_end[0] - cartesian_start[0]
@@ -69,19 +70,21 @@ def calc_move_time_polar(dist, speed, accel):
     logging.info("force move calced pos: %s", (normalized_x, normalized_y))
 
     if not accel:
-        return (x_ratio, y_ratio), 0., dist / speed, speed
+        return (x_ratio, y_ratio), 0., angle / speed, speed
     #dist = 90, accel = 10, velocity=5
     # max_cruise_v2 = 900
     #accel_t = 5 / 10 = .5
     #accel_decel_d = .5 * 5 = 2.5
     #cruise_t = (90 - 2.5) / 5 = 16.5
-    max_cruise_v2 = dist * accel
+    max_cruise_v2 = angle * accel
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
     accel_t = speed / accel
     accel_decel_d = accel_t * speed
-    cruise_t = (dist - accel_decel_d) / speed
-    return cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, accel_t, speed
+    cruise_t = (angle - accel_decel_d) / speed
+    move = cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, accel_t, speed
+    moves.append(move)
+    return moves
 
 class ForceMove:
     def __init__(self, config):
@@ -149,7 +152,7 @@ class ForceMove:
             stepper.set_position((0., 0., 0.))
         
         if is_polar_bed:
-            moves = [calc_move_time_polar(dist, speed, accel),]
+            moves = calc_move_time_polar(dist, speed, accel)
             start_pos = (10., 0., 0.)
             print_time = toolhead.get_last_move_time()
             total_time = print_time
