@@ -50,7 +50,9 @@ def calc_move_time_polar(angle, speed, accel):
     if accel == 0:
         accel = 10
     segmentation_angle_degs = 45
-    num_segments = angle // segmentation_angle_degs
+    num_segments = int(angle / float(segmentation_angle_degs))
+    if angle % segmentation_angle_degs != 0:
+        num_segments += 1
     cartesian_start = (RADIUS,0)
     max_cruise_v2 = angle * accel
     moves = []
