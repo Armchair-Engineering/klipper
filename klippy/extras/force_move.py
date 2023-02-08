@@ -40,8 +40,8 @@ def calc_move_time_polar(dist, speed, accel):
     y_move = cartesian_end[1] - cartesian_start[1]
     normalized_x = x_move / math.sqrt(x_move**2 + y_move**2)
     normalized_y = y_move / math.sqrt(x_move**2 + y_move**2)
-    logging.info("force move calculated pos, unnormalized: %s" % (x_move, y_move))
-    logging.info("force move calced pos: %s" % (normalized_x, normalized_y))
+    logging.info("force move calculated pos, unnormalized: %s", (x_move, y_move))
+    logging.info("force move calced pos: %s", (normalized_x, normalized_y))
 
     if not accel:
         return (normalized_x, normalized_y), 0., dist / speed, speed
