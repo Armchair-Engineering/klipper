@@ -209,13 +209,14 @@ class ForceMove:
             print_time = toolhead.get_last_move_time()
             total_time = print_time
             for move in moves:
-                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v, current_v = move
+                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v, start_v = move
                 if accel_t != 0 or decel_t != 0:
                     my_accel = accel
                 else:
                     my_accel = 0.
+                logging.info("start_v: %s my_accel: %s" % (start_v, my_accel))
                 self.trapq_append(self.trapq, total_time, accel_t, cruise_t, decel_t,
-                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., current_v, cruise_v, my_accel)
+                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., start_v, cruise_v, my_accel)
                 total_time += accel_t + cruise_t + decel_t
                 logging.info("accel_t: %s, cruise_t: %s, decel_t: %s, cruise_v: %s" % (accel_t, cruise_t, decel_t, cruise_v))
                 logging.info("moved from %s to %s in %s" % (start_pos[:-1], (end_x, end_y), total_time))
