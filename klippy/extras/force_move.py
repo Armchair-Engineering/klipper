@@ -181,26 +181,34 @@ class ForceMove:
             stepper.set_position((10., 0., 0.))
         else:
             stepper.set_position((0., 0., 0.))
+        
         if is_polar_bed:
             moves = calc_move_time_polar(dist, speed, accel)
             start_pos = (10., 0., 0.)
+            print_time = toolhead.get_last_move_time()
+            total_time = print_time
+            last_accel_t = 0.
             for move in moves:
-                print_time = toolhead.get_last_move_time()
                 end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
+                last_accel_t = accel_t
                 self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
+                total_time += accel_t + cruise_t
                 start_pos = (end_x, end_y, 0.)
+            if len(moves) == 1:
+                total_time += last_accel_t
+            stepper.generate_steps(total_time)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
             self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
                             0., 0., 0., axis_r, 0., 0., 0., cruise_v, accel)
-        print_time = print_time + accel_t + cruise_t + accel_t
-        stepper.generate_steps(print_time)
-        self.trapq_finalize_moves(self.trapq, print_time + 99999.9)
+            total_time = print_time + accel_t + cruise_t + accel_t
+            stepper.generate_steps(total_time)
+        self.trapq_finalize_moves(self.trapq, total_time + 99999.9)
         stepper.set_trapq(prev_trapq)
         stepper.set_stepper_kinematics(prev_sk)
-        toolhead.note_kinematic_activity(print_time)
+        toolhead.note_kinematic_activity(total_time)
         toolhead.dwell(accel_t + cruise_t + accel_t)
         
     def _lookup_stepper(self, gcmd):
