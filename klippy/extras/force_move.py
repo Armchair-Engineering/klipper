@@ -80,6 +80,8 @@ def calc_move_time_polar(angle, speed, accel):
         print("moving from %s to %s" % (cartesian_start, cartesian_end))
         #how long it takes to get up to cruising speed
         angle_delta_degs = math.degrees(angle_delta)
+        decel_t = 0
+        accel_t = 0
         if state == "cruising":
             decel_t = cur_speed / accel
             accel_t = 0
@@ -111,7 +113,9 @@ def calc_move_time_polar(angle, speed, accel):
             elif state == "decelerating":
                 cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
             cur_speed = speed
-        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), speed)
+        if state == "decelerating":
+            decel_t = accel_t
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), decel_t, speed)
         moves.append(move)
         cartesian_start = cartesian_end
    
@@ -186,18 +190,16 @@ class ForceMove:
             moves = calc_move_time_polar(dist, speed, accel)
             start_pos = (10., 0., 0.)
             print_time = toolhead.get_last_move_time()
-            total_time = print_time
+            next_move_time = print_time
             for move in moves:
-                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
-                self.trapq_append(self.trapq, total_time, accel_t, cruise_t, accel_t,
+                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v = move
+                self.trapq_append(self.trapq, next_move_time, accel_t, cruise_t, decel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
-                total_time += accel_t + cruise_t
-                if len(moves) == 1:
-                    total_time += accel_t
-                logging.info("accel_t: %s, cruise_t: %s, cruise_v: %s" % (accel_t, cruise_t, cruise_v))
+                next_move_time += accel_t + cruise_t + decel_t
+                logging.info("accel_t: %s, cruise_t: %s, decel_t: %s, cruise_v: %s" % (accel_t, cruise_t, decel_t, cruise_v))
                 logging.info("moved from %s to %s in %s" % (start_pos[:-1], (end_x, end_y), total_time))
                 start_pos = (end_x, end_y, 0.)
-            stepper.generate_steps(total_time)
+                stepper.generate_steps(total_time)
             logging.info("total time: %s" % total_time)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
