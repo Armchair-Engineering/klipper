@@ -82,40 +82,45 @@ def calc_move_time_polar(angle, speed, accel):
         angle_delta_degs = math.degrees(angle_delta)
         decel_t = 0
         accel_t = 0
+        accel_d = 0
+        decel_d = 0
         if state == "cruising":
             decel_t = cur_speed / accel
-            accel_t = 0
             speed_left = 0 - cur_speed
-            accel_decel_d = decel_t * speed_left #how far we have to spin to get up to speed
+            decel_d = decel_t * speed_left #how far we have to spin to get up to speed
             if is_last:
                 state = "decelerating"
-                accel_t = decel_t
         else:
             speed_left = speed - cur_speed
             accel_t = speed_left / accel
-            accel_decel_d = accel_t * speed_left #how far we have to spin to get up to speed
-        
-        if abs(accel_decel_d) > angle_delta_degs: #if we won't get up to speed before we hit the end of the move
+            accel_d = accel_t * speed_left #how far we have to spin to get up to speed
+        if accel_d > angle_delta_degs:
+            #if we won't get up to speed before we hit the end of the move
             if state == "cruising":
                 state = "decelerating"
             cruise_t = 0 # we won't be cruising at all
             accel_t = math.sqrt(angle_delta_degs / accel)
-            if state == "accelerating":
-                cur_speed = cur_speed + (accel * accel_t) #add acceled speed
-            else:
-                cur_speed = cur_speed - (accel * accel_t) #substract acceled speed
+            cur_speed = cur_speed + (accel * accel_t) #add acceled speed
+                
+        elif abs(decel_d) > angle_delta_degs: # if we can't stop entirely this move
+            if state == "cruising":
+                state = "decelerating"
+            cruise_t = 0 # we won't be cruising at all
+            decel_t = math.sqrt(angle_delta_degs / accel)
+            cur_speed = cur_speed - (accel * accel_t) #substract acceled speed
         else:
+            
             if state == "accelerating":
                 state = "cruising"
-                cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
+                cruise_t = (angle_delta_degs - abs(accel_d)) / speed
             elif state == "cruising":
                 cruise_t = (angle_delta_degs) / speed
             elif state == "decelerating":
-                cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
+                cruise_t = (angle_delta_degs - abs(decel_d)) / speed
             cur_speed = speed
-        if state == "decelerating":
-            decel_t = accel_t
-        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), decel_t, speed)
+        if state != "decelerating":
+            decel_t = 0
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed)
         moves.append(move)
         cartesian_start = cartesian_end
    
