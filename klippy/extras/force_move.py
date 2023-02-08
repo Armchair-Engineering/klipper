@@ -29,20 +29,26 @@ def calc_move_time(dist, speed, accel):
     return axis_r, accel_t, cruise_t, speed
 def calc_move_time_polar(dist, speed, accel):
     #dist in degs, speed in deg/s and accel in deg/s/s
-    #except i think the math is the same no matter what, so extra func is not needed
-    axis_r = 1.
-    if dist < 0.:
-        axis_r = -1.
-        dist = -dist
-    if not accel or not dist:
-        return axis_r, 0., dist / speed, speed
+    #same as calc_move_time_polar, but axis_r (normalized move vector) needs to match such that 
+    #   only the bed moves the given distance
+    if not dist:
+        dist = 0
+    ending_angle = math.radians(dist)
+    cartesian_start = (0,1)
+    cartesian_end = (math.cos(ending_angle), math.sin(ending_angle))
+    x_move = cartesian_end[0] - cartesian_start[0]
+    y_move = cartesian_end[1] - cartesian_start[1]
+    
+    # if not accel or not dist:
+    #     return axis_r, 0., dist / speed, speed
+
     max_cruise_v2 = dist * accel
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
     accel_t = speed / accel
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
-    return axis_r, accel_t, cruise_t, speed
+    return (x_move, y_move), accel_t, cruise_t, speed
 
 class ForceMove:
     def __init__(self, config):
@@ -96,6 +102,7 @@ class ForceMove:
         toolhead = self.printer.lookup_object('toolhead')
         toolhead.flush_step_generation()
         is_polar_bed = 'stepper_bed' in stepper.get_name()
+        logging.info("manual move for: %s, is_polar_bed: %s" % (stepper.get_name(), is_polar_bed))
         if is_polar_bed:
             prev_sk = stepper.set_stepper_kinematics(
                 self.polar_bed_stepper_kinematics)
@@ -103,14 +110,20 @@ class ForceMove:
             prev_sk = stepper.set_stepper_kinematics(self.stepper_kinematics)
         
         prev_trapq = stepper.set_trapq(self.trapq)
-        stepper.set_position((0., 0., 0.))
+        if is_polar_bed:
+            stepper.set_position((0., 1., 0.))
+        else:
+            stepper.set_position((0., 0., 0.))
         if is_polar_bed:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
+            print_time = toolhead.get_last_move_time()
+            self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
+                            0., 1., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
-        print_time = toolhead.get_last_move_time()
-        self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
-                          0., 0., 0., axis_r, 0., 0., 0., cruise_v, accel)
+            print_time = toolhead.get_last_move_time()
+            self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
+                            0., 0., 0., axis_r, 0., 0., 0., cruise_v, accel)
         print_time = print_time + accel_t + cruise_t + accel_t
         stepper.generate_steps(print_time)
         self.trapq_finalize_moves(self.trapq, print_time + 99999.9)
