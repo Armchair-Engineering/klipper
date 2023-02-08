@@ -27,6 +27,22 @@ def calc_move_time(dist, speed, accel):
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
     return axis_r, accel_t, cruise_t, speed
+def calc_move_time_polar(dist, speed, accel):
+    #dist in degs, speed in deg/s and accel in deg/s/s
+    #except i think the math is the same no matter what, so extra func is not needed
+    axis_r = 1.
+    if dist < 0.:
+        axis_r = -1.
+        dist = -dist
+    if not accel or not dist:
+        return axis_r, 0., dist / speed, speed
+    max_cruise_v2 = dist * accel
+    if max_cruise_v2 < speed**2:
+        speed = math.sqrt(max_cruise_v2)
+    accel_t = speed / accel
+    accel_decel_d = accel_t * speed
+    cruise_t = (dist - accel_decel_d) / speed
+    return axis_r, accel_t, cruise_t, speed
 
 class ForceMove:
     def __init__(self, config):
@@ -39,6 +55,8 @@ class ForceMove:
         self.trapq_finalize_moves = ffi_lib.trapq_finalize_moves
         self.stepper_kinematics = ffi_main.gc(
             ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
+        self.polar_bed_stepper_kinematics = ffi_main.gc(
+            ffi_lib.polarbed_stepper_alloc(b'a'), ffi_lib.free)
         # Register commands
         gcode = self.printer.lookup_object('gcode')
         gcode.register_command('STEPPER_BUZZ', self.cmd_STEPPER_BUZZ,
@@ -77,10 +95,19 @@ class ForceMove:
     def manual_move(self, stepper, dist, speed, accel=0.):
         toolhead = self.printer.lookup_object('toolhead')
         toolhead.flush_step_generation()
-        prev_sk = stepper.set_stepper_kinematics(self.stepper_kinematics)
+        is_polar_bed = 'stepper_bed' in stepper.get_name()
+        if is_polar_bed:
+            prev_sk = stepper.set_stepper_kinematics(
+                self.polar_bed_stepper_kinematics)
+        else:
+            prev_sk = stepper.set_stepper_kinematics(self.stepper_kinematics)
+        
         prev_trapq = stepper.set_trapq(self.trapq)
         stepper.set_position((0., 0., 0.))
-        axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
+        if is_polar_bed:
+            axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
+        else:
+            axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
         print_time = toolhead.get_last_move_time()
         self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
                           0., 0., 0., axis_r, 0., 0., 0., cruise_v, accel)
@@ -91,6 +118,7 @@ class ForceMove:
         stepper.set_stepper_kinematics(prev_sk)
         toolhead.note_kinematic_activity(print_time)
         toolhead.dwell(accel_t + cruise_t + accel_t)
+        
     def _lookup_stepper(self, gcmd):
         name = gcmd.get('STEPPER')
         if name not in self.steppers:
