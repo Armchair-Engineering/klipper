@@ -41,49 +41,99 @@ def polar_to_cartesian(r, theta):
 
 
 def calc_move_time_polar(angle, speed, accel):
-    #dist in degs, speed in deg/s and accel in deg/s/s
+    #angle in degs, speed in deg/s and accel in deg/s/s
     #same as calc_move_time_polar, but axis_r (normalized move vector) needs to match such that 
     #   only the bed moves the given distance
-    moves = []
+    RADIUS = 10
     if not angle:
         angle = 0
-    ending_angle = math.radians(angle)
-    cartesian_start = (10,0)
-    cartesian_end = polar_to_cartesian(10, ending_angle)
-    x_move = cartesian_end[0] - cartesian_start[0]
-    y_move = cartesian_end[1] - cartesian_start[1]
-    dist = math.sqrt(x_move**2 + y_move**2)
-    inv_dist = 1. / dist
-    x_ratio = x_move * inv_dist
-    y_ratio = y_move * inv_dist
-    # x moves 1, y moves 1. ratio is 50 for x, 50 for y
-    # x moves 1, y moves 0. ratio is 100 for x, 0 for y
-    # x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
-    # y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
-    # if x_move < 0:
-    #     x_ratio = -x_ratio
-    # if y_move < 0:
-    #     y_ratio = -y_ratio
-    normalized_x = round(x_move / math.sqrt(x_move**2 + y_move**2), 10)
-    normalized_y = round(y_move / math.sqrt(x_move**2 + y_move**2), 10)
-    logging.info("force move calculated pos, unnormalized: %s", (x_move, y_move))
-    logging.info("force move calced pos: %s", (normalized_x, normalized_y))
-
-    if not accel:
-        return (x_ratio, y_ratio), 0., dist / speed, speed
-    #dist = 90, accel = 10, velocity=5
-    # max_cruise_v2 = 900
-    #accel_t = 5 / 10 = .5
-    #accel_decel_d = .5 * 5 = 2.5
-    #cruise_t = (90 - 2.5) / 5 = 16.5
-    max_cruise_v2 = dist * accel
+    if accel == 0:
+        accel = 10
+    segmentation_angle_degs = 90
+    num_segments = int(angle / float(segmentation_angle_degs))
+    if angle % segmentation_angle_degs != 0:
+        num_segments += 1
+    cartesian_start = (RADIUS,0)
+    max_cruise_v2 = angle * accel
+    moves = []
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
-    accel_t = speed / accel
-    accel_decel_d = accel_t * speed
-    cruise_t = (dist - accel_decel_d) / speed
-    move = cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, accel_t, speed
-    moves.append(move)
+    cur_speed = 0
+    state = "accelerating"
+    for i in range(num_segments):
+        is_last = i == num_segments - 1
+        start_angle_degs = i * segmentation_angle_degs
+        end_angle_degs = (i + 1) * segmentation_angle_degs
+        if end_angle_degs > angle:
+            end_angle_degs = angle
+        start_angle = math.radians(start_angle_degs)
+        ending_angle = math.radians(end_angle_degs)
+        angle_delta = ending_angle - start_angle
+        cartesian_end = polar_to_cartesian(RADIUS, ending_angle)
+        cartesian_end = (round(cartesian_end[0],10), round(cartesian_end[1],10))
+        x_move = cartesian_end[0] - cartesian_start[0]
+        y_move = cartesian_end[1] - cartesian_start[1]
+        total_move_dist = math.sqrt(x_move**2 + y_move**2)
+        inv_dist = 1. / total_move_dist
+        x_ratio = x_move * inv_dist
+        y_ratio = y_move * inv_dist
+        # x_ratio = round(abs(x_move) / (abs(x_move) + abs(y_move)), 10)
+        # y_ratio = round(abs(y_move) / (abs(x_move) + abs(y_move)), 10)
+        # if x_move < 0:
+        #     x_ratio = -x_ratio
+        # if y_move < 0:
+        #     y_ratio = -y_ratio
+        print("moving from %s to %s" % (cartesian_start, cartesian_end))
+        #how long it takes to get up to cruising speed
+        angle_delta_degs = math.degrees(angle_delta)
+        decel_t = 0
+        accel_t = 0
+        accel_d = 0
+        decel_d = 0
+        if state == "cruising":
+            decel_t = cur_speed / accel
+            speed_left = 0 - cur_speed
+            decel_d = decel_t * speed_left #how far we have to spin to get up to speed
+            if is_last:
+                state = "decelerating"
+        else:
+            speed_left = speed - cur_speed
+            accel_t = speed_left / accel
+            accel_d = accel_t * speed_left #how far we have to spin to get up to speed
+        if accel_d > angle_delta_degs:
+            #if we won't get up to speed before we hit the end of the move
+            if state == "cruising":
+                state = "decelerating"
+            cruise_t = 0 # we won't be cruising at all
+            accel_t = math.sqrt(angle_delta_degs / accel)
+            cur_speed = cur_speed + (accel * accel_t) #add acceled speed
+                
+        elif abs(decel_d) > angle_delta_degs: # if we can't stop entirely this move
+            if state == "cruising":
+                state = "decelerating"
+            cruise_t = 0 # we won't be cruising at all
+            decel_t = math.sqrt(angle_delta_degs / accel)
+            cur_speed = cur_speed - (accel * accel_t) #substract acceled speed
+        else:
+            
+            if state == "accelerating":
+                state = "cruising"
+                cruise_t = (total_move_dist - abs(accel_d)) / speed
+            elif state == "cruising":
+                cruise_t = (total_move_dist) / speed
+            elif state == "decelerating":
+                cruise_t = (total_move_dist - abs(decel_d)) / speed
+            cur_speed = speed
+        if num_segments == 1:
+            decel_t = accel_t
+            cruise_t -= decel_t
+        elif state != "decelerating":
+            decel_t = 0
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed)
+        moves.append(move)
+        print(num_segments)
+        cartesian_start = cartesian_end
+   
     return moves
 
 class ForceMove:
