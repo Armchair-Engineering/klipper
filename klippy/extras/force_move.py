@@ -89,7 +89,7 @@ class ForceMove:
         self.stepper_kinematics = ffi_main.gc(
             ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
         self.polar_bed_stepper_kinematics = ffi_main.gc(
-            ffi_lib.polarxz_stepper_alloc(b'a'), ffi_lib.free)
+            ffi_lib.polarbed_stepper_alloc(b'a'), ffi_lib.free)
         # Register commands
         gcode = self.printer.lookup_object('gcode')
         gcode.register_command('STEPPER_BUZZ', self.cmd_STEPPER_BUZZ,
@@ -138,14 +138,14 @@ class ForceMove:
         
         prev_trapq = stepper.set_trapq(self.trapq)
         if is_polar_bed:
-            stepper.set_position((10., 0., 0.))
+            stepper.set_position((110., 100., 0.))
         else:
             stepper.set_position((0., 0., 0.))
         if is_polar_bed:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
             self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
-                            10., 0., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
+                            110., 100., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()

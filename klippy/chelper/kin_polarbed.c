@@ -9,7 +9,9 @@ static double
 polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move *m, double move_time)
 {
     struct coord c = move_get_coord(m, move_time);
-    double angle = atan2(c.y, c.x);
+    double x = c.x - 100;
+    double y = c.y - 100;
+    double angle = atan2(y, x);
     if (angle - sk->commanded_pos > M_PI)
         angle -= 2.f * M_PI;
     else if (angle - sk->commanded_pos < -M_PI)
