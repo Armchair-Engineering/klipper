@@ -38,9 +38,13 @@ def calc_move_time_polar(dist, speed, accel):
     cartesian_end = (math.cos(ending_angle), math.sin(ending_angle))
     x_move = cartesian_end[0] - cartesian_start[0]
     y_move = cartesian_end[1] - cartesian_start[1]
-    
-    # if not accel or not dist:
-    #     return axis_r, 0., dist / speed, speed
+    normalized_x = x_move / math.sqrt(x_move**2 + y_move**2)
+    normalized_y = y_move / math.sqrt(x_move**2 + y_move**2)
+    logging.info("force move calculated pos, unnormalized: %s" % (x_move, y_move))
+    logging.info("force move calced pos: %s" % (normalized_x, normalized_y))
+
+    if not accel:
+        return (normalized_x, normalized_y), 0., dist / speed, speed
 
     max_cruise_v2 = dist * accel
     if max_cruise_v2 < speed**2:
@@ -48,7 +52,7 @@ def calc_move_time_polar(dist, speed, accel):
     accel_t = speed / accel
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
-    return (x_move, y_move), accel_t, cruise_t, speed
+    return (normalized_x, normalized_y), accel_t, cruise_t, speed
 
 class ForceMove:
     def __init__(self, config):
