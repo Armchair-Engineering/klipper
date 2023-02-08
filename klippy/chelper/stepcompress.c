@@ -213,7 +213,7 @@ check_line(struct stepcompress *sc, struct step_move move)
         || move.interval >= 0x80000000) {
         errorf("stepcompress o=%d i=%d c=%d a=%d: Invalid sequence"
                , sc->oid, move.interval, move.count, move.add);
-        return ERROR_RET;
+        return 0;
     }
     uint32_t interval = move.interval, p = 0;
     uint16_t i;
