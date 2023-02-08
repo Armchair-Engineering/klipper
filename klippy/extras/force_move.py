@@ -124,6 +124,9 @@ def calc_move_time_polar(angle, speed, accel):
             elif state == "decelerating":
                 cruise_t = (angle_delta_degs - abs(decel_d)) / speed
             cur_speed = speed
+        if num_segments == 1:
+            decel_t = accel_t
+            cruise_t -= decel_t
         if state != "decelerating":
             decel_t = 0
         move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed)
