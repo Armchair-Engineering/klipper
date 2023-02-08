@@ -45,8 +45,8 @@ def calc_move_time_polar(dist, speed, accel):
     # breakpoint()
     x_move = cartesian_end[0] - cartesian_start[0]
     y_move = cartesian_end[1] - cartesian_start[1]
-    normalized_x = x_move / math.sqrt(x_move**2 + y_move**2)
-    normalized_y = y_move / math.sqrt(x_move**2 + y_move**2)
+    normalized_x = round(x_move / math.sqrt(x_move**2 + y_move**2), 10)
+    normalized_y = round(y_move / math.sqrt(x_move**2 + y_move**2), 10)
     logging.info("force move calculated pos, unnormalized: %s", (x_move, y_move))
     logging.info("force move calced pos: %s", (normalized_x, normalized_y))
 
