@@ -16,7 +16,7 @@ polarbed_stepper_angle_calc_position(struct stepper_kinematics *sk, struct move 
     double y = c.y - 100;
     if (x == 0 && y == 0)
         errorf("polarbed_stepper_angle_calc_position: x==y==0");
-        return 0.0001;
+        return 0.01;
     double angle = atan2(y, x);
     if (angle - sk->commanded_pos == M_PI) {
         if (angle < 0)
