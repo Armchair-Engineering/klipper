@@ -190,12 +190,12 @@ class ForceMove:
             moves = calc_move_time_polar(dist, speed, accel)
             start_pos = (10., 0., 0.)
             print_time = toolhead.get_last_move_time()
-            next_move_time = print_time
+            total_time = print_time
             for move in moves:
                 end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v = move
-                self.trapq_append(self.trapq, next_move_time, accel_t, cruise_t, decel_t,
+                self.trapq_append(self.trapq, total_time, accel_t, cruise_t, decel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
-                next_move_time += accel_t + cruise_t + decel_t
+                total_time += accel_t + cruise_t + decel_t
                 logging.info("accel_t: %s, cruise_t: %s, decel_t: %s, cruise_v: %s" % (accel_t, cruise_t, decel_t, cruise_v))
                 logging.info("moved from %s to %s in %s" % (start_pos[:-1], (end_x, end_y), total_time))
                 start_pos = (end_x, end_y, 0.)
