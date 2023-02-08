@@ -70,12 +70,12 @@ def circle_from_3_points(p1, p2, p3):
     z3 = complex(p3[0], p3[1])
 
     if (z1 == z2) or (z2 == z3) or (z3 == z1):
-        raise ValueError("Duplicate points: %s, %s, %s" % z1, z2, z3)
+        raise ValueError("Duplicate points: %s, %s, %s" % (z1, z2, z3))
 
     w = (z3 - z1) / (z2 - z1)
 
     if abs(w.imag) <= 0.0001:
-        raise ValueError(f"Points are collinear: %s, %s, %s" % z1, z2, z3)
+        raise ValueError("Points are collinear: %s, %s, %s" % (z1, z2, z3))
 
     c = (z2 - z1) * (w - abs(w) ** 2) / (2j * w.imag) + z1
     # Simplified denominator
