@@ -59,6 +59,7 @@ def calc_move_time_polar(angle, speed, accel):
     if max_cruise_v2 < speed**2:
         speed = math.sqrt(max_cruise_v2)
     cur_speed = 0
+    prev_speed = 0
     state = "accelerating"
     for i in range(num_segments):
         is_last = i == num_segments - 1
@@ -90,6 +91,7 @@ def calc_move_time_polar(angle, speed, accel):
         accel_t = 0
         accel_d = 0
         decel_d = 0
+        prev_speed = cur_speed
         if state == "cruising":
             decel_t = cur_speed / accel
             speed_left = 0 - cur_speed
@@ -129,7 +131,7 @@ def calc_move_time_polar(angle, speed, accel):
             cruise_t -= decel_t
         elif state != "decelerating":
             decel_t = 0
-        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed)
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed, prev_speed)
         moves.append(move)
         print(num_segments)
         cartesian_start = cartesian_end
@@ -207,13 +209,13 @@ class ForceMove:
             print_time = toolhead.get_last_move_time()
             total_time = print_time
             for move in moves:
-                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v = move
+                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v, current_v = move
                 if accel_t != 0 or decel_t != 0:
                     my_accel = accel
                 else:
                     my_accel = 0.
                 self.trapq_append(self.trapq, total_time, accel_t, cruise_t, decel_t,
-                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, my_accel)
+                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., current_v, cruise_v, my_accel)
                 total_time += accel_t + cruise_t + decel_t
                 logging.info("accel_t: %s, cruise_t: %s, decel_t: %s, cruise_v: %s" % (accel_t, cruise_t, decel_t, cruise_v))
                 logging.info("moved from %s to %s in %s" % (start_pos[:-1], (end_x, end_y), total_time))
