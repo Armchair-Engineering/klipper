@@ -138,14 +138,14 @@ class ForceMove:
         
         prev_trapq = stepper.set_trapq(self.trapq)
         if is_polar_bed:
-            stepper.set_position((110., 100., 0.))
+            stepper.set_position((10., 0., 0.))
         else:
             stepper.set_position((0., 0., 0.))
         if is_polar_bed:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
             self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
-                            110., 100., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
+                            10., 0., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
