@@ -84,7 +84,7 @@ def calc_move_time_polar(angle, speed, accel):
     cruise_t = (dist - accel_decel_d) / speed
     move = cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, accel_t, speed
     moves.append(move)
-    return 
+    return moves
 
 class ForceMove:
     def __init__(self, config):
