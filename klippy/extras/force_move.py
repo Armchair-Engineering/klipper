@@ -27,6 +27,12 @@ def calc_move_time(dist, speed, accel):
     accel_decel_d = accel_t * speed
     cruise_t = (dist - accel_decel_d) / speed
     return axis_r, accel_t, cruise_t, speed
+def cartesian_to_polar(x, y):
+    return (math.sqrt(x**2 + y**2), math.atan2(y, x))
+
+
+def polar_to_cartesian(r, theta):
+    return (r * math.cos(theta), r * math.sin(theta))
 def calc_move_time_polar(dist, speed, accel):
     #dist in degs, speed in deg/s and accel in deg/s/s
     #same as calc_move_time_polar, but axis_r (normalized move vector) needs to match such that 
@@ -34,8 +40,9 @@ def calc_move_time_polar(dist, speed, accel):
     if not dist:
         dist = 0
     ending_angle = math.radians(dist)
-    cartesian_start = (0,1)
-    cartesian_end = (math.cos(ending_angle), math.sin(ending_angle))
+    cartesian_start = (1,0)
+    cartesian_end = polar_to_cartesian(1, ending_angle)
+    # breakpoint()
     x_move = cartesian_end[0] - cartesian_start[0]
     y_move = cartesian_end[1] - cartesian_start[1]
     normalized_x = x_move / math.sqrt(x_move**2 + y_move**2)
@@ -115,14 +122,14 @@ class ForceMove:
         
         prev_trapq = stepper.set_trapq(self.trapq)
         if is_polar_bed:
-            stepper.set_position((0., 1., 0.))
+            stepper.set_position((1., 0., 0.))
         else:
             stepper.set_position((0., 0., 0.))
         if is_polar_bed:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time_polar(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
             self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
-                            0., 1., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
+                            1., 0., 0., axis_r[0], axis_r[1], 0., 0., cruise_v, accel)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
