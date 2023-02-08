@@ -189,7 +189,7 @@ class ForceMove:
             total_time = print_time
             for move in moves:
                 end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
-                self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
+                self.trapq_append(self.trapq, total_time, accel_t, cruise_t, accel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
                 total_time += accel_t + cruise_t
                 if len(moves) == 1:
