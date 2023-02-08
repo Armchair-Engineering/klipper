@@ -197,6 +197,7 @@ class ForceMove:
                 start_pos = (end_x, end_y, 0.)
             if len(moves) == 1:
                 total_time += last_accel_t
+            logging.info("total time: %s" % total_time)
             stepper.generate_steps(total_time)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
