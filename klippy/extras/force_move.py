@@ -111,7 +111,7 @@ def calc_move_time_polar(angle, speed, accel):
             elif state == "decelerating":
                 cruise_t = (angle_delta_degs - abs(accel_decel_d)) / speed
             cur_speed = speed
-        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, accel_t, cruise_t, speed)
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), speed)
         moves.append(move)
         cartesian_start = cartesian_end
    
@@ -187,18 +187,16 @@ class ForceMove:
             start_pos = (10., 0., 0.)
             print_time = toolhead.get_last_move_time()
             total_time = print_time
-            last_accel_t = 0.
             for move in moves:
                 end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, cruise_v = move
-                last_accel_t = accel_t
                 self.trapq_append(self.trapq, print_time, accel_t, cruise_t, accel_t,
                             start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., 0., cruise_v, accel)
                 total_time += accel_t + cruise_t
+                if len(moves) == 1:
+                    total_time += accel_t
                 start_pos = (end_x, end_y, 0.)
-            if len(moves) == 1:
-                total_time += last_accel_t
+                stepper.generate_steps(total_time)
             logging.info("total time: %s" % total_time)
-            stepper.generate_steps(total_time)
         else:
             axis_r, accel_t, cruise_t, cruise_v = calc_move_time(dist, speed, accel)
             print_time = toolhead.get_last_move_time()
