@@ -61,6 +61,7 @@ def calc_move_time_polar(angle, speed, accel):
     cur_speed = 0
     prev_speed = 0
     state = "accelerating"
+    prev_cartesian_velocity = 0
     for i in range(num_segments):
         is_last = i == num_segments - 1
         start_angle_degs = i * segmentation_angle_degs
@@ -131,7 +132,37 @@ def calc_move_time_polar(angle, speed, accel):
             cruise_t -= decel_t
         elif state != "decelerating":
             decel_t = 0
-        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), speed, prev_speed)
+            
+        l = 0.5 * total_move_dist
+        sagitta = RADIUS - math.sqrt(RADIUS**2 - l**2)
+        radius_arm_traveled_dist = sagitta * 2
+        total_move_time = accel_t + cruise_t + decel_t
+        radius_arm_velocity = radius_arm_traveled_dist / total_move_time
+        radius_arm_accel = radius_arm_velocity / accel_t
+        # x_velocity = r_velocity * cos(theta) - r_theta_velocity * sin(theta)
+        # y_velocity = r_velocity * sin(theta) + r_theta_velocity * cos(theta)
+
+        # x_accel = r_accel * cos(theta) - r_theta_accel * sin(theta)
+
+
+        # x_accel = radius_arm_accel * math.cos(angle_delta) - r_theta_accel * math.sin(angle_delta) - r_theta_velocity**2 * math.cos(angle_delta)
+        # x_accel = -r_theta_accel * sin(theta) - r_theta_velocity^2 * cos(theta)
+        # y_accel = +r_theta_accel * cos(theta) - r_theta_velocity^2 * sin(theta)
+
+        # x_acceleration = (dr_velocity/dt) * cos(angle_delta) - r_velocity * sin(angle_delta) * (dθ/dt) - (dr_theta_velocity/dt) * sin(angle_delta) - r_theta_velocity^2 * cos(theta)
+        # y_acceleration = (dr_velocity/dt) * sin(angle_delta) + r_velocity * cos(angle_delta) * (dθ/dt) + (dr_theta_velocity/dt) * cos(angle_delta) - r_theta_velocity^2 * sin(theta)
+
+        x_velocity = -speed * math.sin(angle_delta)
+        y_velocity = speed * math.cos(angle_delta)
+        total_velocity = math.sqrt(x_velocity**2 + y_velocity**2)
+        
+        x_accel = -accel * math.sin(angle_delta) - speed**2 * math.cos(angle_delta)
+        y_accel = accel * math.cos(angle_delta) - speed**2 * math.sin(angle_delta)
+        total_accel = math.sqrt(x_accel**2 + y_accel**2)
+        
+        
+        move = (cartesian_end[0], cartesian_end[1], x_ratio, y_ratio, round(accel_t,10), round(cruise_t,10), round(decel_t, 10), total_velocity, prev_cartesian_velocity, total_accel)
+        prev_cartesian_velocity = total_velocity
         moves.append(move)
         print(num_segments)
         cartesian_start = cartesian_end
@@ -191,11 +222,11 @@ class ForceMove:
         toolhead.flush_step_generation()
         is_polar_bed = 'stepper_bed' in stepper.get_name()
         logging.info("manual move for: %s, is_polar_bed: %s" % (stepper.get_name(), is_polar_bed))
-        if is_polar_bed:
-            prev_sk = stepper.set_stepper_kinematics(
-                self.polar_bed_stepper_kinematics)
-        else:
-            prev_sk = stepper.set_stepper_kinematics(self.stepper_kinematics)
+        # if is_polar_bed:
+        #     prev_sk = stepper.set_stepper_kinematics(
+        #         self.polar_bed_stepper_kinematics)
+        # else:
+        prev_sk = stepper.set_stepper_kinematics(self.stepper_kinematics)
         
         prev_trapq = stepper.set_trapq(self.trapq)
         if is_polar_bed:
@@ -208,15 +239,13 @@ class ForceMove:
             start_pos = (10., 0., 0.)
             print_time = toolhead.get_last_move_time()
             total_time = print_time
+            radius = 10
             for move in moves:
-                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v, start_v = move
-                if accel_t != 0 or decel_t != 0:
-                    my_accel = accel
-                else:
-                    my_accel = 0.
-                logging.info("start_v: %s my_accel: %s" % (start_v, my_accel))
+                end_x, end_y, axis_r_x, axis_r_y, accel_t, cruise_t, decel_t, cruise_v, start_v, accel = move
+                logging.info("start_v: %s my_accel: %s" % (start_v, accel))
+
                 self.trapq_append(self.trapq, total_time, accel_t, cruise_t, decel_t,
-                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., start_v, cruise_v, my_accel)
+                            start_pos[0], start_pos[1], 0., axis_r_x, axis_r_y, 0., start_v, cruise_v, accel)
                 total_time += accel_t + cruise_t + decel_t
                 logging.info("accel_t: %s, cruise_t: %s, decel_t: %s, cruise_v: %s" % (accel_t, cruise_t, decel_t, cruise_v))
                 logging.info("moved from %s to %s in %s" % (start_pos[:-1], (end_x, end_y), total_time))
