@@ -64,27 +64,6 @@ def get_quadrant_crosses(p1, p2):
 #     # GCODE: spit back Y offset to calibration command
 
 
-def circle_from_3_points(p1, p2, p3):
-    z1 = complex(p1[0], p1[1])
-    z2 = complex(p2[0], p2[1])
-    z3 = complex(p3[0], p3[1])
-
-    if (z1 == z2) or (z2 == z3) or (z3 == z1):
-        raise ValueError("Duplicate points: %s, %s, %s" % (z1, z2, z3))
-
-    w = (z3 - z1) / (z2 - z1)
-
-    if abs(w.imag) <= 0.0001:
-        raise ValueError("Points are collinear: %s, %s, %s" % (z1, z2, z3))
-
-    c = (z2 - z1) * (w - abs(w) ** 2) / (2j * w.imag) + z1
-    # Simplified denominator
-    r = abs(z1 - c)
-    r = round(r, 10)
-    c = (round(c.real, 10), round(c.imag, 10))
-
-    return c, r
-
 
 def get_circle_line_intersections_new(p1, p2, dist):
     # find points on a line that are a given distance from origin
@@ -298,7 +277,7 @@ class PolarXZKinematics:
         z_pos = 0.5 * (x_pos - z_pos)
         x_pos = radius * math.cos(bed_angle)
         y_pos = radius * math.sin(bed_angle)
-        return [x_pos, y_pos, z_pos]
+        return [round(x_pos,10), round(y_pos,10), round(z_pos,10)]
 
     def set_position(self, newpos, homing_axes):
         for s in self.steppers:
@@ -960,6 +939,8 @@ class PolarXZKinematics:
                             logging.info(
                                 "looking at smallest radius, but no intersection"
                             )
+                            logging.info(intersection_subset)
+                            return [(move.start_pos, move.end_pos)]
                         handled_zero = True
                         continue
                     if len(intersection_subset):
