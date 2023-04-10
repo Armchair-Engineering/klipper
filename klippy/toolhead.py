@@ -431,7 +431,9 @@ class ToolHead:
         moves = [move]
         if hasattr(self.kin, "segment_move"):
             move_positions = self.kin.segment_move(move)
-            if move_positions:
+            if move_positions is None:
+                moves = []
+            elif move_positions:
                 logging.info("move_positions: %s", move_positions)
                 moves = [
                     Move(self, move[0], move[1], speed) for move in move_positions

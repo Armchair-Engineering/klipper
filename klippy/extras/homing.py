@@ -131,7 +131,7 @@ class HomingMove:
             if trig_steps != halt_steps:
                 logging.info('using halt steps')
                 haltpos = self.calc_toolhead_pos(kin_spos, halt_steps)
-                logging.info("probe haltpos: %s", haltpos)
+            logging.info("probe haltpos: %s", haltpos)
         else:
             haltpos = trigpos = movepos
             over_steps = {sp.stepper_name: sp.halt_pos - sp.trig_pos

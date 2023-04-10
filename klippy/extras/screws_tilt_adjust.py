@@ -32,7 +32,7 @@ class ScrewsTiltAdjust:
         self.thread = config.getchoice('screw_thread', self.threads,
                                        default='CW-M3')
         # Initialize ProbePointsHelper
-        points = [coord for coord, name in self.screws]
+        points = self._generate_points()
         self.probe_helper = probe.ProbePointsHelper(self.config,
                                                     self.probe_finalize,
                                                     default_points=points)
@@ -45,7 +45,16 @@ class ScrewsTiltAdjust:
     cmd_SCREWS_TILT_CALCULATE_help = "Tool to help adjust bed leveling " \
                                      "screws by calculating the number " \
                                      "of turns to level it."
+    def _generate_points(self):
+        # kin = self.printer.lookup_object('toolhead').get_kinematics()
+        # if hasattr(kin, 'stepper_bed'):
+        #     # polar
+        #     radius = kin.radius
+        #     points = 
+        # else:
 
+        points = [coord for coord, name in self.screws]
+        return points
     def cmd_SCREWS_TILT_CALCULATE(self, gcmd):
         self.max_diff = gcmd.get_float("MAX_DEVIATION", None)
         # Option to force all turns to be in the given direction (CW or CCW)
