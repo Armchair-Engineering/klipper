@@ -8,6 +8,7 @@ import sys
 import logging, math
 from collections import OrderedDict
 import chelper
+from ..extras.homeable_stepper import HomeableStepper
 
 EPSILON = 0.000001
 ROUND_CONSTANT = 8
@@ -215,10 +216,13 @@ def distance_point_to_line(p0, p1, p2):
 class PolarXZKinematics:
     def __init__(self, toolhead, config):
         # Setup axis steppers
-        self.stepper_bed = stepper.PrinterStepper(
+        # self.stepper_bed = stepper.PrinterStepper(
+        #     config.getsection("stepper_bed"), units_in_radians=True
+        # )
+        self.stepper_bed = HomeableStepper(
             config.getsection("stepper_bed"), units_in_radians=True
         )
-        ffi_main, ffi_lib = chelper.get_ffi()
+        # ffi_main, ffi_lib = chelper.get_ffi()
         # self.stepper_bed = None
         # self.rail_bed = stepper.PrinterRail(config.getsection("stepper_bed"), units_in_radians=True)
         rail_x = stepper.PrinterRail(config.getsection("stepper_x"))
@@ -228,13 +232,20 @@ class PolarXZKinematics:
 
         rail_x.get_endstops()[0][0].add_stepper(rail_z.get_steppers()[0])
         rail_z.get_endstops()[0][0].add_stepper(rail_x.get_steppers()[0])
-        self.manual_stepper_kinematics = ffi_main.gc(
-            ffi_lib.cartesian_stepper_alloc(b'x'), ffi_lib.free)
-        self.stepper_bed.setup_itersolve("polarxz_stepper_alloc", b"a")
+        # self.manual_stepper_kinematics = ffi_main.gc(
+        #     ffi_lib.cartesian_stepper_alloc(b"x"), ffi_lib.free
+        # )
+
         rail_x.setup_itersolve("polarxz_stepper_alloc", b"+")
         rail_z.setup_itersolve("polarxz_stepper_alloc", b"-")
-        self.rails = [rail_x, rail_z,]
-        self.rail_lookup = {"x": rail_x, "z": rail_z, }
+        self.rails = [
+            rail_x,
+            rail_z,
+        ]
+        self.rail_lookup = {
+            "x": rail_x,
+            "z": rail_z,
+        }
         self.steppers = [self.stepper_bed] + [
             s for r in self.rails for s in r.get_steppers()
         ]
@@ -288,6 +299,13 @@ class PolarXZKinematics:
         self.two_move_crossing = config.getboolean("two_move_crossing", False)
         self.time_segmentation = config.getboolean("time_segmentation", False)
         self.bed_radius = config.getfloat("bed_radius", 100, above=1.0)
+
+    def setup_bed_itersolve(self, for_homing=False):
+        if for_homing:
+            self.stepper_bed.setup_itersolve("polarxz_stepper_alloc", b"a")
+            self.stepper_bed.set_trapq(self.toolhead.get_trapq())
+        else:
+            self.stepper_bed.setup_itersolve_for_homing()
 
     def get_steppers(self):
         return list(self.steppers)
@@ -368,7 +386,8 @@ class PolarXZKinematics:
     #     if home_z:
     #         self._home_axis(homing_state, 2, self.rails[1])
     def _home_bed(self, homing_state):
-        pass
+        self.stepper_bed.home(self.max_rotational_accel)
+
     def home(self, homing_state):
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
@@ -385,7 +404,7 @@ class PolarXZKinematics:
                 logging.info("homing x!")
                 rail = self.rails[1]
             elif axis == 1:  # y doesn't do shit
-                #home bed?!
+                # home bed?!
                 logging.info("we should be homing Y")
                 self._home_bed(homing_state)
                 continue
@@ -978,8 +997,8 @@ class PolarXZKinematics:
             logging.info("end_radius: %s", segmentation_radii[end_circle_index])
             if (
                 start_circle_index == mid_circle_index == end_circle_index
-            ) and start_circle_index != smallest_segmentation_index:  
-                # if we don't cross a segmentation threshold 
+            ) and start_circle_index != smallest_segmentation_index:
+                # if we don't cross a segmentation threshold
                 # and we're not at the smallest threshold
                 # then no need for segmentation!
                 end_pos = move.end_pos
@@ -1175,9 +1194,9 @@ class PolarXZKinematics:
                 current_e_pos = new_e_pos
                 current_z_pos = new_z_pos
             logging.info("actual moves: %s", actual_moves)
-            #if we had a single intersection, 
+            # if we had a single intersection,
             # that is an edge case where we are trying to move
-            # within the zero crossing radius 
+            # within the zero crossing radius
             # from the edge of the zero crossing radius.
             if len(actual_moves) == 0 and len(total_intersections) == 1:
                 return None
