@@ -16,14 +16,26 @@ class ScrewsTiltAdjust:
         self.max_diff = None
         self.max_diff_error = False
         # Read config
-        for i in range(99):
-            prefix = "screw%d" % (i + 1,)
-            if config.get(prefix, None) is None:
-                break
-            screw_coord = config.getfloatlist(prefix, count=2)
-            screw_name = "screw at %.3f,%.3f" % screw_coord
-            screw_name = config.get(prefix + "_name", screw_name)
-            self.screws.append((screw_coord, screw_name))
+        generate_screw_positions = config.getboolean(
+            'generate_polar_positions', False)
+        if generate_screw_positions:
+            screw_radius = config.getfloat('screw_radius', above=0.)
+            num_screws = config.getint('screw_count', minval=3)
+            initial_angle = 0
+            for i in range(num_screws):
+                angle = initial_angle + (i * 2 * math.pi / num_screws)
+                x = screw_radius * math.cos(angle)
+                y = screw_radius * math.sin(angle)
+                self.screws.append(([x, y], "screw%d" % (i + 1,)))
+        else:
+            for i in range(99):
+                prefix = "screw%d" % (i + 1,)
+                if config.get(prefix, None) is None:
+                    break
+                screw_coord = config.getfloatlist(prefix, count=2)
+                screw_name = "screw at %.3f,%.3f" % screw_coord
+                screw_name = config.get(prefix + "_name", screw_name)
+                self.screws.append((screw_coord, screw_name))
         if len(self.screws) < 3:
             raise config.error("screws_tilt_adjust: Must have "
                                "at least three screws")

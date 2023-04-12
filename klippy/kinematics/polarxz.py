@@ -8,10 +8,11 @@ import sys
 import logging, math
 from collections import OrderedDict
 import chelper
-from ..extras.homeable_stepper import HomeableStepper
+from extras.homeable_stepper import HomeablePrinterStepper
 
 EPSILON = 0.000001
 ROUND_CONSTANT = 8
+CALC_POS_ROUND_CONSTANT = 4
 HALF_PI = math.pi * 0.5
 BED_CENTER = (0, 0)
 
@@ -20,12 +21,13 @@ def get_region_indices(start, mid, end, regions):
     # regions is expected to be sorted in descending order
     # loop through the points and find the smallest region that contains each point
     regions_list = []
-    sqred_regions = [r**2 for r in regions]
+    sqred_regions = [round(r**2, ROUND_CONSTANT) for r in regions]
     for point in [start, mid, end]:
         smallest_r_idx = None
-        point_dist_sq = point[0] ** 2 + point[1] ** 2
+        point_dist_sq = round(point[0] ** 2 + point[1] ** 2, ROUND_CONSTANT)
         for r_sq in sqred_regions:
             if point_dist_sq <= r_sq:
+
                 smallest_r_idx = sqred_regions.index(r_sq)
         regions_list.append(smallest_r_idx)
 
@@ -78,6 +80,64 @@ def get_quadrant_crosses(p1, p2):
 #     # GCODE: move radius arm to (x_offset)
 #     # GCODE: spit back Y offset to calibration command
 
+def get_circle_line_intersections_newnew(p1, p2, distance):
+    """
+    Finds the intersections of a line segment defined by two points (x1, y1) and (x2, y2) and a given distance from 0,0.
+
+    Args:
+    x1 (float): x-coordinate of the first point
+    y1 (float): y-coordinate of the first point
+    x2 (float): x-coordinate of the second point
+    y2 (float): y-coordinate of the second point
+    distance (float): the distance from 0,0
+
+    Returns:
+    A list of intersection points (x, y). If there are no intersection points, returns an empty list.
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+
+    # Calculate the length of the line segment
+    length = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    # Check if the line segment is vertical
+    if x1 == x2:
+        # Check if the intersection points lie on the line segment
+        if abs(x1) <= distance and 0 <= y1 <= length and 0 <= y2 <= length:
+            inter_y1 = math.sqrt(distance ** 2 - x1 ** 2)
+            inter_y2 = -math.sqrt(distance ** 2 - x1 ** 2)
+            return [(x1, y1 + inter_y1), (x1, y1 + inter_y2)]
+        else:
+            return []
+    # Check if the line segment is horizontal
+    elif y1 == y2:
+        # Check if the intersection points lie on the line segment
+        if abs(y1) <= distance and 0 <= x1 <= length and 0 <= x2 <= length:
+            inter_x1 = math.sqrt(distance ** 2 - y1 ** 2)
+            inter_x2 = -math.sqrt(distance ** 2 - y1 ** 2)
+            return [(x1 + inter_x1, y1), (x1 + inter_x2, y1)]
+        else:
+            return []
+    else:
+        # Calculate the direction of the line segment
+        dx, dy = (x2 - x1) / length, (y2 - y1) / length
+
+        # Calculate the coordinates of the two possible intersection points
+        inter_x1, inter_y1 = (dx * distance, dy * distance)
+        inter_x2, inter_y2 = (-dx * distance, -dy * distance)
+
+        # Check if the intersection points lie on the line segment
+        if (0 <= inter_x1 <= length and 0 <= inter_y1 <= length):
+            intersection1 = (x1 + inter_x1, y1 + inter_y1)
+        else:
+            intersection1 = None
+
+        if (0 <= inter_x2 <= length and 0 <= inter_y2 <= length):
+            intersection2 = (x1 + inter_x2, y1 + inter_y2)
+        else:
+            intersection2 = None
+
+        return [i for i in [intersection1, intersection2] if i is not None]
 
 def get_circle_line_intersections_new(p1, p2, dist):
     # find points on a line that are a given distance from origin
@@ -119,6 +179,8 @@ def get_circle_line_intersections(p1, p2, radius):
     # https://stackoverflow.com/questions/1073336/circle-line-collision-detection
     # p1, p2 are the endpoints of the line
     # radius is the radius of the circle
+    p1 = (round(p1[0], ROUND_CONSTANT), round(p1[1], ROUND_CONSTANT))
+    p2 = (round(p2[0], ROUND_CONSTANT), round(p2[1], ROUND_CONSTANT))
     intersections = []
     dx = p2[0] - p1[0]
     dy = p2[1] - p1[1]
@@ -219,9 +281,12 @@ class PolarXZKinematics:
         # self.stepper_bed = stepper.PrinterStepper(
         #     config.getsection("stepper_bed"), units_in_radians=True
         # )
-        self.stepper_bed = HomeableStepper(
-            config.getsection("stepper_bed"), units_in_radians=True
+
+        self.toolhead = toolhead
+        self.stepper_bed = HomeablePrinterStepper(
+            config.getsection("stepper_bed")
         )
+        self.setup_bed_itersolve(for_homing=False)
         # ffi_main, ffi_lib = chelper.get_ffi()
         # self.stepper_bed = None
         # self.rail_bed = stepper.PrinterRail(config.getsection("stepper_bed"), units_in_radians=True)
@@ -249,7 +314,7 @@ class PolarXZKinematics:
         self.steppers = [self.stepper_bed] + [
             s for r in self.rails for s in r.get_steppers()
         ]
-        self.toolhead = toolhead
+
         for s in self.get_steppers():
             s.set_trapq(toolhead.get_trapq())
             toolhead.register_step_generator(s.generate_steps)
@@ -299,14 +364,17 @@ class PolarXZKinematics:
         self.two_move_crossing = config.getboolean("two_move_crossing", False)
         self.time_segmentation = config.getboolean("time_segmentation", False)
         self.bed_radius = config.getfloat("bed_radius", 100, above=1.0)
+        self.homing = False
 
+        self.segmentation_radii = generate_segmentation_radii(
+                self.zero_crossing_radius, 0.5, self.max_xy + 5
+            )
     def setup_bed_itersolve(self, for_homing=False):
         if for_homing:
+            self.stepper_bed.setup_itersolve_for_homing()
+        else:
             self.stepper_bed.setup_itersolve("polarxz_stepper_alloc", b"a")
             self.stepper_bed.set_trapq(self.toolhead.get_trapq())
-        else:
-            self.stepper_bed.setup_itersolve_for_homing()
-
     def get_steppers(self):
         return list(self.steppers)
 
@@ -386,22 +454,29 @@ class PolarXZKinematics:
     #     if home_z:
     #         self._home_axis(homing_state, 2, self.rails[1])
     def _home_bed(self, homing_state):
+        self.setup_bed_itersolve(for_homing=True)
         self.stepper_bed.home(self.max_rotational_accel)
-
+        self.setup_bed_itersolve(for_homing=False)
+        logging.info("bed homed! should set itersolve back.")
     def home(self, homing_state):
+        self.homing = True
         # Each axis is homed independently and in order
         homing_axes = homing_state.get_axes()
-        home_xy = 0 in homing_axes or 1 in homing_axes
+        # home_xy = 0 in homing_axes or 1 in homing_axes
+        home_x = 0 in homing_axes
+        home_y = 1 in homing_axes
         home_z = 2 in homing_axes
         updated_axes = []
-        if home_xy:
-            updated_axes = [0, 1]
         if home_z:
             updated_axes.append(2)
+        if home_x:
+            updated_axes.append(0)
+        if home_y:
+            updated_axes.append(1)
         homing_state.set_axes(updated_axes)
         for axis in updated_axes:
             if axis == 2:  # if we're homing z, get the z rail
-                logging.info("homing x!")
+                logging.info("homing z!")
                 rail = self.rails[1]
             elif axis == 1:  # y doesn't do shit
                 # home bed?!
@@ -425,33 +500,42 @@ class PolarXZKinematics:
             logging.info("hi.position_endstop: %s", hi.position_endstop)
             logging.info("position_min: %s", position_min)
             logging.info("position_max: %s", position_max)
-
-            if hi.positive_dir:
-                # klipper dies if we do a move at 0,0, so offset position by microstep distance
-                # TODO - maybe only offset if it's an x move
-                forcepos[axis] -= (
-                    hi.position_endstop
-                    - position_min
-                    - self.zero_crossing_radius
-                )
-                if forcepos[axis] < position_min:
-                    forcepos[axis] = position_min + self.zero_crossing_radius
+            if axis == 0:
+                if hi.positive_dir:
+                    # klipper dies if we do a move at 0,0, so offset position by microstep distance
+                    # TODO - maybe only offset if it's an x move
+                    forcepos[axis] -= (
+                        hi.position_endstop
+                        - position_min
+                        - self.zero_crossing_radius
+                    )
+                    if forcepos[axis] < position_min:
+                        forcepos[axis] = position_min + self.zero_crossing_radius
+                else:
+                    forcepos[axis] += (
+                        position_max
+                        - hi.position_endstop
+                        + self.zero_crossing_radius
+                    )
+                    if forcepos[axis] > position_max:
+                        forcepos[axis] = position_max - self.zero_crossing_radius
             else:
-                forcepos[axis] += (
-                    position_max
-                    - hi.position_endstop
-                    + self.zero_crossing_radius
-                )
-                if forcepos[axis] > position_max:
-                    forcepos[axis] = position_max - self.zero_crossing_radius
+                if hi.positive_dir:
+                    forcepos[axis] = position_min
+                else:
+                    forcepos[axis] = position_max
+            
             # Perform homing
+            logging.info("homing axis: %s, forcepos: %s, homepos: %s", axis, forcepos, homepos)
             homing_state.home_rails([rail], forcepos, homepos)
-
+        self.homing = False
     def _motor_off(self, print_time):
         self.limit_z = (1.0, -1.0)
         self.limit_xy2 = -1.0
 
     def check_move(self, move):
+        if self.homing:
+            return move
         end_pos = move.end_pos
         xy2 = end_pos[0] ** 2 + end_pos[1] ** 2
         if xy2 > self.limit_xy2:
@@ -521,6 +605,9 @@ class PolarXZKinematics:
             # logging.info("step_ratio: %s" % step_ratio)
 
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
+            logging.info("step_ratio: %s" % step_ratio)
+            logging.info("step ratio * max rotational velocity: %s" % abs(step_ratio * self.max_rotational_velocity))
+            logging.info("step ratio * max rotational accel: %s" % abs(step_ratio * self.max_rotational_accel))
             move.limit_speed(
                 abs(step_ratio * self.max_rotational_velocity),
                 abs(step_ratio * self.max_rotational_accel),
@@ -831,6 +918,7 @@ class PolarXZKinematics:
         if self.toolhead.special_queuing_state == "Drip":
             return []
         if move.axes_d[0] or move.axes_d[1]:
+            logging.info("move axes_d: %s", move.axes_d)
             # def testit(move):
             logging.info("segmenting move!")
             cart_start_x = move.start_pos[0]
@@ -862,19 +950,19 @@ class PolarXZKinematics:
             y_intersect = riserun * x_intersect + y_intercept
             closest_to_origin = (x_intersect, y_intersect)
             # REVISIT - might not need these dist calcs?
-            dist_start = distance(move.start_pos, BED_CENTER)
-            dist_end = distance(move.end_pos, BED_CENTER)
-            logging.info("dist_start: %s", dist_start)
-            logging.info("dist_end: %s", dist_end)
+            # dist_start = distance(move.start_pos, BED_CENTER)
+            # dist_end = distance(move.end_pos, BED_CENTER)
+            # logging.info("dist_start: %s", dist_start)
+            # logging.info("dist_end: %s", dist_end)
             logging.info("zero_crossing_radius: %s", self.zero_crossing_radius)
-            logging.info(
-                "start_is_small: %s",
-                dist_start < self.zero_crossing_radius,
-            )
-            logging.info(
-                "end_is_small: %s",
-                dist_end < self.zero_crossing_radius,
-            )
+            # logging.info(
+            #     "start_is_small: %s",
+            #     dist_start < self.zero_crossing_radius,
+            # )
+            # logging.info(
+            #     "end_is_small: %s",
+            #     dist_end < self.zero_crossing_radius,
+            # )
             # if (
             #     dist_start <= self.zero_crossing_radius
             #     and dist_end <= self.zero_crossing_radius
@@ -903,8 +991,8 @@ class PolarXZKinematics:
             #     else:
             #         return None
             midpoint = (
-                (move.start_pos[0] + move.end_pos[0]) / 2,
-                (move.start_pos[1] + move.end_pos[1]) / 2,
+                (cart_start_x + cart_end_x) / 2,
+                (cart_start_y + cart_end_y) / 2,
             )
 
             use_min = False
@@ -925,9 +1013,8 @@ class PolarXZKinematics:
             #         distance((cart_start_x, cart_start_y), (0, 0)) - EPSILON
             #     )
             #     logging.info("zero_cross_radius: %s" % zero_cross_radius)
-            segmentation_radii = generate_segmentation_radii(
-                zero_cross_radius, 0.5, self.max_xy + 5
-            )
+            segmentation_radii = self.segmentation_radii 
+
             smallest_segmentation_index = len(segmentation_radii) - 1
             # segmentation thresholds are sorted by distance, descending
             if use_min:
@@ -1199,7 +1286,11 @@ class PolarXZKinematics:
             # within the zero crossing radius
             # from the edge of the zero crossing radius.
             if len(actual_moves) == 0 and len(total_intersections) == 1:
-                return None
+                if move.axes_d[2] != 0 and move.axes_d[3] != 0:
+                    return None
+                else:
+                    intersection = total_intersections[0]
+                    return [(move.start_pos, [intersection[0], intersection[1], move.end_pos[2], move.end_pos[3]])]
             return actual_moves
         else:
             return []

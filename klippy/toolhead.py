@@ -60,6 +60,12 @@ class Move:
         self.accel = min(self.accel, accel)
         self.delta_v2 = 2.0 * self.move_d * self.accel
         self.smooth_delta_v2 = min(self.smooth_delta_v2, self.delta_v2)
+        logging.info("self.max_cruise_v2", self.max_cruise_v2)
+        logging.info("self.min_move_t", self.min_move_t)
+        logging.info("self.accel", self.accel)
+        logging.info("self.delta_v2", self.delta_v2)
+        logging.info("self.smooth_delta_v2", self.smooth_delta_v2)
+        
     def move_error(self, msg="Move out of range"):
         ep = self.end_pos
         m = "%s: %.3f %.3f %.3f [%.3f]" % (msg, ep[0], ep[1], ep[2], ep[3])
