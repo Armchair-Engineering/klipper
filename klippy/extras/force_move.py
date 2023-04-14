@@ -80,7 +80,7 @@ class ForceMove:
             #convert convert radians to degrees
             dist = math.radians(dist)
             speed = math.radians(speed)
-            # accel = math.radians(accel)
+            accel = math.radians(accel)
                 
 
         toolhead.flush_step_generation()

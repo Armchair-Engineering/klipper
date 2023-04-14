@@ -9,6 +9,9 @@ import logging, math
 from collections import OrderedDict
 import chelper
 from extras.homeable_stepper import HomeablePrinterStepper
+from shapely.geometry import LineString
+from shapely.geometry import Point
+from shapely.geometry import MultiPoint
 
 EPSILON = 0.000001
 ROUND_CONSTANT = 8
@@ -25,10 +28,9 @@ def get_region_indices(start, mid, end, regions):
     for point in [start, mid, end]:
         smallest_r_idx = None
         point_dist_sq = round(point[0] ** 2 + point[1] ** 2, ROUND_CONSTANT)
-        for r_sq in sqred_regions:
+        for i, r_sq in enumerate(sqred_regions):
             if point_dist_sq <= r_sq:
-
-                smallest_r_idx = sqred_regions.index(r_sq)
+                smallest_r_idx = i
         regions_list.append(smallest_r_idx)
 
     return regions_list
@@ -81,63 +83,20 @@ def get_quadrant_crosses(p1, p2):
 #     # GCODE: spit back Y offset to calibration command
 
 def get_circle_line_intersections_newnew(p1, p2, distance):
-    """
-    Finds the intersections of a line segment defined by two points (x1, y1) and (x2, y2) and a given distance from 0,0.
-
-    Args:
-    x1 (float): x-coordinate of the first point
-    y1 (float): y-coordinate of the first point
-    x2 (float): x-coordinate of the second point
-    y2 (float): y-coordinate of the second point
-    distance (float): the distance from 0,0
-
-    Returns:
-    A list of intersection points (x, y). If there are no intersection points, returns an empty list.
-    """
-    x1, y1 = p1
-    x2, y2 = p2
-
-    # Calculate the length of the line segment
-    length = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-    # Check if the line segment is vertical
-    if x1 == x2:
-        # Check if the intersection points lie on the line segment
-        if abs(x1) <= distance and 0 <= y1 <= length and 0 <= y2 <= length:
-            inter_y1 = math.sqrt(distance ** 2 - x1 ** 2)
-            inter_y2 = -math.sqrt(distance ** 2 - x1 ** 2)
-            return [(x1, y1 + inter_y1), (x1, y1 + inter_y2)]
-        else:
-            return []
-    # Check if the line segment is horizontal
-    elif y1 == y2:
-        # Check if the intersection points lie on the line segment
-        if abs(y1) <= distance and 0 <= x1 <= length and 0 <= x2 <= length:
-            inter_x1 = math.sqrt(distance ** 2 - y1 ** 2)
-            inter_x2 = -math.sqrt(distance ** 2 - y1 ** 2)
-            return [(x1 + inter_x1, y1), (x1 + inter_x2, y1)]
-        else:
-            return []
+    p = Point(0,0)
+    c = p.buffer(distance, resolution=25).boundary
+    l = LineString([(p1[0], p1[1]), (p2[0], p2[1])])
+    i = c.intersection(l)
+    
+    if isinstance(i, Point):
+        intersection = i.coords[0]
+        return [(intersection[0], intersection[1]),]
+    elif isinstance(i, MultiPoint):
+        intersection1 = i.geoms[0].coords[0]
+        intersection2 = i.geoms[1].coords[0]
+        return [(intersection1[0], intersection1[1]), (intersection2[0], intersection2[1])]
     else:
-        # Calculate the direction of the line segment
-        dx, dy = (x2 - x1) / length, (y2 - y1) / length
-
-        # Calculate the coordinates of the two possible intersection points
-        inter_x1, inter_y1 = (dx * distance, dy * distance)
-        inter_x2, inter_y2 = (-dx * distance, -dy * distance)
-
-        # Check if the intersection points lie on the line segment
-        if (0 <= inter_x1 <= length and 0 <= inter_y1 <= length):
-            intersection1 = (x1 + inter_x1, y1 + inter_y1)
-        else:
-            intersection1 = None
-
-        if (0 <= inter_x2 <= length and 0 <= inter_y2 <= length):
-            intersection2 = (x1 + inter_x2, y1 + inter_y2)
-        else:
-            intersection2 = None
-
-        return [i for i in [intersection1, intersection2] if i is not None]
+        return []
 
 def get_circle_line_intersections_new(p1, p2, dist):
     # find points on a line that are a given distance from origin
@@ -281,7 +240,7 @@ class PolarXZKinematics:
         # self.stepper_bed = stepper.PrinterStepper(
         #     config.getsection("stepper_bed"), units_in_radians=True
         # )
-
+        self.debug = config.getboolean("debug", False)
         self.toolhead = toolhead
         self.stepper_bed = HomeablePrinterStepper(
             config.getsection("stepper_bed")
@@ -292,8 +251,8 @@ class PolarXZKinematics:
         # self.rail_bed = stepper.PrinterRail(config.getsection("stepper_bed"), units_in_radians=True)
         rail_x = stepper.PrinterRail(config.getsection("stepper_x"))
         rail_z = stepper.PrinterRail(config.getsection("stepper_z"))
-        logging.info("rail x endstops: %s", rail_x.get_endstops())
-        logging.info("rail z endstops: %s", rail_z.get_endstops())
+        self.debug_log("rail x endstops: %s", rail_x.get_endstops())
+        self.debug_log("rail z endstops: %s", rail_z.get_endstops())
 
         rail_x.get_endstops()[0][0].add_stepper(rail_z.get_steppers()[0])
         rail_z.get_endstops()[0][0].add_stepper(rail_x.get_steppers()[0])
@@ -327,16 +286,20 @@ class PolarXZKinematics:
         self.max_rotational_velocity = config.getfloat(
             "max_rotational_velocity", 360, above=0.0
         )
-        # convert max_rotational_velocity to radians per second
-        self.max_rotational_velocity = math.radians(
-            self.max_rotational_velocity
-        )
+
         self.max_rotational_accel = config.getfloat(
             "max_rotational_accel",
-            self.max_accel,
+            720,
             above=0.0,
             maxval=self.max_accel,
         )
+
+        # convert bed velocity/accel limits to radians
+        self.max_rotational_velocity = math.radians(
+            self.max_rotational_velocity
+        )
+        self.max_rotational_accel = math.radians(self.max_rotational_accel)
+
         self.max_z_velocity = config.getfloat(
             "max_z_velocity",
             self.max_velocity,
@@ -367,8 +330,14 @@ class PolarXZKinematics:
         self.homing = False
 
         self.segmentation_radii = generate_segmentation_radii(
-                self.zero_crossing_radius, 0.5, self.max_xy + 5
+                self.zero_crossing_radius, 0.5, round(self.max_xy, 0) + 5
             )
+        
+   
+    def debug_log(self, *args, **kwargs):
+        if self.debug:
+            logging.info(*args, **kwargs)
+
     def setup_bed_itersolve(self, for_homing=False):
         if for_homing:
             self.stepper_bed.setup_itersolve_for_homing()
@@ -393,7 +362,7 @@ class PolarXZKinematics:
         ]
 
     def set_position(self, newpos, homing_axes):
-        logging.info("polarxz setpos: %s", newpos)
+        self.debug_log("polarxz setpos: %s", newpos)
         for s in self.steppers:
             new_newpos = tuple([round(val, ROUND_CONSTANT) for val in newpos])
             # x = new_newpos[0]
@@ -407,7 +376,7 @@ class PolarXZKinematics:
             #     x = x * self.zero_crossing_radius
             #     y = y * self.zero_crossing_radius
             #     new_newpos = (x, y) + tuple(new_newpos[2:])
-            #     logging.info(
+            #     self.debug_log(
             #         "polarxz setpos less than radius, but now: %s", new_newpos
             #     )
             s.set_position(new_newpos)
@@ -457,7 +426,7 @@ class PolarXZKinematics:
         self.setup_bed_itersolve(for_homing=True)
         self.stepper_bed.home(self.max_rotational_accel)
         self.setup_bed_itersolve(for_homing=False)
-        logging.info("bed homed! should set itersolve back.")
+        self.debug_log("bed homed! should set itersolve back.")
     def home(self, homing_state):
         self.homing = True
         # Each axis is homed independently and in order
@@ -476,15 +445,15 @@ class PolarXZKinematics:
         homing_state.set_axes(updated_axes)
         for axis in updated_axes:
             if axis == 2:  # if we're homing z, get the z rail
-                logging.info("homing z!")
+                self.debug_log("homing z!")
                 rail = self.rails[1]
             elif axis == 1:  # y doesn't do shit
                 # home bed?!
-                logging.info("we should be homing Y")
+                self.debug_log("we should be homing Y")
                 self._home_bed(homing_state)
                 continue
             elif axis == 0:
-                logging.info("homing x!")
+                self.debug_log("homing x!")
                 rail = self.rails[0]
             # Determine movement
             position_min, position_max = rail.get_range()
@@ -493,13 +462,13 @@ class PolarXZKinematics:
             homepos[axis] = hi.position_endstop
             if axis == 0:
                 homepos[1] = 0.0
-            logging.info("homepos: %s", homepos)
+            self.debug_log("homepos: %s", homepos)
             forcepos = list(homepos)
-            logging.info("forcepos: %s", forcepos)
-            logging.info("hi.positive_dir: %s", hi.positive_dir)
-            logging.info("hi.position_endstop: %s", hi.position_endstop)
-            logging.info("position_min: %s", position_min)
-            logging.info("position_max: %s", position_max)
+            self.debug_log("forcepos: %s", forcepos)
+            self.debug_log("hi.positive_dir: %s", hi.positive_dir)
+            self.debug_log("hi.position_endstop: %s", hi.position_endstop)
+            self.debug_log("position_min: %s", position_min)
+            self.debug_log("position_max: %s", position_max)
             if axis == 0:
                 if hi.positive_dir:
                     # klipper dies if we do a move at 0,0, so offset position by microstep distance
@@ -526,7 +495,7 @@ class PolarXZKinematics:
                     forcepos[axis] = position_max
             
             # Perform homing
-            logging.info("homing axis: %s, forcepos: %s, homepos: %s", axis, forcepos, homepos)
+            self.debug_log("homing axis: %s, forcepos: %s, homepos: %s", axis, forcepos, homepos)
             homing_state.home_rails([rail], forcepos, homepos)
         self.homing = False
     def _motor_off(self, print_time):
@@ -579,9 +548,9 @@ class PolarXZKinematics:
                 step_ratio = (
                     delta_distance * steps_per_degree / abs(delta_degrees)
                 )
-                logging.info("delta_degrees: %s" % delta_degrees)
-                logging.info("delta_distance: %s" % delta_distance)
-                logging.info("steps_per_degree: %s" % steps_per_degree)
+                self.debug_log("delta_degrees: %s" % delta_degrees)
+                self.debug_log("delta_distance: %s" % delta_distance)
+                self.debug_log("steps_per_degree: %s" % steps_per_degree)
 
             # rotational_velocity = dtheta / dt
             # radial_velocity = dr / dt
@@ -601,13 +570,13 @@ class PolarXZKinematics:
             # vy = (radial_velocity * math.sin(polar_start[1])) + (polar_start[0] * rotational_velocity * math.cos(polar_start[1]))
 
             # adjusted_velocity = math.sqrt(vx**2 + vy**2)
-            # logging.info("adjusted velocity: %s", adjusted_velocity)
-            # logging.info("step_ratio: %s" % step_ratio)
+            # self.debug_log("adjusted velocity: %s", adjusted_velocity)
+            self.debug_log("step_ratio: %s" % step_ratio)
 
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
-            logging.info("step_ratio: %s" % step_ratio)
-            logging.info("step ratio * max rotational velocity: %s" % abs(step_ratio * self.max_rotational_velocity))
-            logging.info("step ratio * max rotational accel: %s" % abs(step_ratio * self.max_rotational_accel))
+            self.debug_log("step_ratio: %s" % step_ratio)
+            self.debug_log("step ratio * max rotational velocity: %s" % abs(step_ratio * self.max_rotational_velocity))
+            self.debug_log("step ratio * max rotational accel: %s" % abs(step_ratio * self.max_rotational_accel))
             move.limit_speed(
                 abs(step_ratio * self.max_rotational_velocity),
                 abs(step_ratio * self.max_rotational_accel),
@@ -633,13 +602,13 @@ class PolarXZKinematics:
         zero_cross_radius = self.zero_crossing_radius
         # if (abs(cart_start_x) < zero_cross_radius and abs(cart_start_y) < zero_cross_radius):
         #     zero_cross_radius = distance((cart_start_x, cart_start_y), (0, 0))
-        #     logging.info("zero_cross_radius: %s" % zero_cross_radius)
+        #     self.debug_log("zero_cross_radius: %s" % zero_cross_radius)
         zero_radius_intersections = get_circle_line_intersections(
             (cart_start_x, cart_start_y),
             (cart_end_x, cart_end_y),
             zero_cross_radius,
         )
-        logging.info(
+        self.debug_log(
             "zero_radius_intersections: %s" % zero_radius_intersections
         )
 
@@ -815,19 +784,19 @@ class PolarXZKinematics:
             return self.segment_move_by_circles(move)
 
     def segment_move_by_time(self, move):
-        logging.info(
+        self.debug_log(
             "special_queuing_state: %s", self.toolhead.special_queuing_state
         )
         if self.toolhead.special_queuing_state == "Drip":
             return []
         if move.axes_d[0] or move.axes_d[1]:
-            logging.info("parent move: %s", (move.start_pos, move.end_pos))
+            self.debug_log("parent move: %s", (move.start_pos, move.end_pos))
             move_time = move.min_move_t
             total_segments = self.segments_per_second * move_time
             total_move_dist = distance(move.start_pos, move.end_pos)
             moves_and_ratios = self.zero_cross(move, total_move_dist)
             out_moves = []
-            logging.info("moves_and_ratios: %s", moves_and_ratios)
+            self.debug_log("moves_and_ratios: %s", moves_and_ratios)
             for tup in moves_and_ratios:
 
                 move, ratio = tup
@@ -841,8 +810,8 @@ class PolarXZKinematics:
     def _segment_move(self, move, num_segments, move_dist):
         move_start_pos = move[0]
         move_end_pos = move[1]
-        logging.info("segmenting move!")
-        logging.info("move: %s, ", (move_start_pos, move_end_pos))
+        self.debug_log("segmenting move!")
+        self.debug_log("move: %s, ", (move_start_pos, move_end_pos))
         dx = move_end_pos[0] - move_start_pos[0]
         dy = move_end_pos[1] - move_start_pos[1]
 
@@ -857,7 +826,7 @@ class PolarXZKinematics:
         stepy = dy / num_segments
         px = move_start_pos[0] + stepx
         py = move_start_pos[1] + stepy
-        logging.info("num_segments: %s" % num_segments)
+        self.debug_log("num_segments: %s" % num_segments)
         for i in range(int(num_segments)):
 
             points.append(
@@ -869,15 +838,15 @@ class PolarXZKinematics:
         points = [(move_start_pos[0], move_start_pos[1])] + points
         if len(points) == 1:
             points += [(move_end_pos[0], move_end_pos[1])]
-        logging.info("points: %s" % points)
+        self.debug_log("points: %s" % points)
         xy_moves = []
         while len(points) != 1:
             start = points.pop(0)
             end = points[0]
             xy_moves.append((start, end))
-        logging.info("xy_moves: %s" % xy_moves)
+        self.debug_log("xy_moves: %s" % xy_moves)
         total_z_dist = move_end_pos[2] - move_start_pos[2]
-        logging.info("total z dist: %s" % total_z_dist)
+        self.debug_log("total z dist: %s" % total_z_dist)
         total_e_dist = move_end_pos[3] - move_start_pos[3]
         actual_moves = []
         current_z_pos = move_start_pos[2]
@@ -912,23 +881,23 @@ class PolarXZKinematics:
         return actual_moves
 
     def segment_move_by_circles(self, move):
-        logging.info(
-            "special_queuing_state: %s", self.toolhead.special_queuing_state
-        )
-        if self.toolhead.special_queuing_state == "Drip":
-            return []
+        # self.debug_log(
+        #     "special_queuing_state: %s", self.toolhead.special_queuing_state
+        # )
+        # if self.toolhead.special_queuing_state == "Drip":
+        #     return []
         if move.axes_d[0] or move.axes_d[1]:
-            logging.info("move axes_d: %s", move.axes_d)
+            self.debug_log("move axes_d: %s", move.axes_d)
             # def testit(move):
-            logging.info("segmenting move!")
+            self.debug_log("segmenting move!")
             cart_start_x = move.start_pos[0]
             cart_start_y = move.start_pos[1]
             cart_end_x = move.end_pos[0]
             cart_end_y = move.end_pos[1]
             delta_x = cart_end_x - cart_start_x
             delta_y = cart_end_y - cart_start_y
-            logging.info("start_pos: %s", move.start_pos)
-            logging.info("end_pos: %s", move.end_pos)
+            self.debug_log("start_pos: %s", move.start_pos)
+            self.debug_log("end_pos: %s", move.end_pos)
 
             if delta_x == 0:
                 riserun = 0
@@ -952,14 +921,14 @@ class PolarXZKinematics:
             # REVISIT - might not need these dist calcs?
             # dist_start = distance(move.start_pos, BED_CENTER)
             # dist_end = distance(move.end_pos, BED_CENTER)
-            # logging.info("dist_start: %s", dist_start)
-            # logging.info("dist_end: %s", dist_end)
-            logging.info("zero_crossing_radius: %s", self.zero_crossing_radius)
-            # logging.info(
+            # self.debug_log("dist_start: %s", dist_start)
+            # self.debug_log("dist_end: %s", dist_end)
+            # self.debug_log("zero_crossing_radius: %s", self.zero_crossing_radius)
+            # self.debug_log(
             #     "start_is_small: %s",
             #     dist_start < self.zero_crossing_radius,
             # )
-            # logging.info(
+            # self.debug_log(
             #     "end_is_small: %s",
             #     dist_end < self.zero_crossing_radius,
             # )
@@ -971,7 +940,7 @@ class PolarXZKinematics:
             #         move.start_pos[2] - move.end_pos[2] != 0
             #         or move.start_pos[3] - move.end_pos[3] != 0
             #     ):
-            #         logging.info("extrude or z only move inside origin.")
+            #         self.debug_log("extrude or z only move inside origin.")
             #         return [
             #             (
             #                 (
@@ -1012,7 +981,7 @@ class PolarXZKinematics:
             #     zero_cross_radius = (
             #         distance((cart_start_x, cart_start_y), (0, 0)) - EPSILON
             #     )
-            #     logging.info("zero_cross_radius: %s" % zero_cross_radius)
+            #     self.debug_log("zero_cross_radius: %s" % zero_cross_radius)
             segmentation_radii = self.segmentation_radii 
 
             smallest_segmentation_index = len(segmentation_radii) - 1
@@ -1030,9 +999,9 @@ class PolarXZKinematics:
             ) = get_region_indices(
                 move.start_pos, mid_point, move.end_pos, segmentation_radii
             )
-            logging.info("start_circle_index: %s", start_circle_index)
-            logging.info("mid_circle_index: %s", mid_circle_index)
-            logging.info("end_circle_index: %s", end_circle_index)
+            self.debug_log("start_circle_index: %s", start_circle_index)
+            self.debug_log("mid_circle_index: %s", mid_circle_index)
+            self.debug_log("end_circle_index: %s", end_circle_index)
 
             # old code for finding which thresholds move components are in
             # for index, radius in enumerate(segmentation_radii):
@@ -1076,12 +1045,12 @@ class PolarXZKinematics:
             #         ):
             #             mid_circle_index = index
 
-            logging.info("segmentation_radii: %s", segmentation_radii)
-            logging.info(
+            self.debug_log("segmentation_radii: %s", segmentation_radii)
+            self.debug_log(
                 "start_radius: %s", segmentation_radii[start_circle_index]
             )
-            logging.info("mid_radius: %s", segmentation_radii[mid_circle_index])
-            logging.info("end_radius: %s", segmentation_radii[end_circle_index])
+            self.debug_log("mid_radius: %s", segmentation_radii[mid_circle_index])
+            self.debug_log("end_radius: %s", segmentation_radii[end_circle_index])
             if (
                 start_circle_index == mid_circle_index == end_circle_index
             ) and start_circle_index != smallest_segmentation_index:
@@ -1089,16 +1058,16 @@ class PolarXZKinematics:
                 # and we're not at the smallest threshold
                 # then no need for segmentation!
                 end_pos = move.end_pos
-                logging.info("not crossing a threshold.")
+                self.debug_log("not crossing a threshold.")
                 # if distance(move.end_pos, (0, 0)) < self.zero_crossing_radius:
-                #     logging.info("trying to move to 0! get outta here.")
+                #     self.debug_log("trying to move to 0! get outta here.")
                 #     intersections = get_circle_line_intersections(
                 #         move.start_pos, move.end_pos, self.zero_crossing_radius
                 #     )
                 #     if len(intersections) == 0:
                 #         logging.error("no intersections found!")
-                #     logging.info("intersections: %s", intersections)
-                #     logging.info("new end pos: %s", move.end_pos)
+                #     self.debug_log("intersections: %s", intersections)
+                #     self.debug_log("new end pos: %s", move.end_pos)
                 #     end_pos = (
                 #         intersections[-1][0],
                 #         intersections[-1][1],
@@ -1118,12 +1087,12 @@ class PolarXZKinematics:
                     round(move.start_pos[3], ROUND_CONSTANT),
                 )
                 if end_pos == start_pos:
-                    logging.info("end_pos == start_pos")
+                    self.debug_log("end_pos == start_pos")
                     return None
                 return ((start_pos, end_pos),)
 
-            logging.info("start_circle_index: %s", start_circle_index)
-            logging.info("segmentation_radii: %s", segmentation_radii)
+            self.debug_log("start_circle_index: %s", start_circle_index)
+            self.debug_log("segmentation_radii: %s", segmentation_radii)
 
             intersections = OrderedDict()
             indices_to_traverse = []
@@ -1156,23 +1125,23 @@ class PolarXZKinematics:
                 if distance(move.end_pos, (0, 0)) < self.zero_crossing_radius:
                     ending_within_zero_radius = True
             handled_zero = False
-            logging.info("indices_to_traverse: %s", indices_to_traverse)
-            logging.info("intersections: %s", intersections)
+            self.debug_log("indices_to_traverse: %s", indices_to_traverse)
+            self.debug_log("intersections: %s", intersections)
             for i in indices_to_traverse:
                 radius = segmentation_radii[i]
-                print("index: %s, radius: %s" % (i, radius))
+                
                 if radius not in intersections:
                     intersection_subset = get_circle_line_intersections(
                         move.start_pos, move.end_pos, radius
                     )
-                    logging.info("intersection_subset: %s", intersection_subset)
+                    self.debug_log("intersection_subset: %s", intersection_subset)
                     if i == len(segmentation_radii) - 1 and not handled_zero:
                         # we're in the zero radius
-                        print("zero radius!")
+                        # print("zero radius!")
 
                         if len(intersection_subset) == 2:
 
-                            print("zero crossing with two intersections")
+                            # print("zero crossing with two intersections")
                             # moving through our zero radius, move 90 deg to incoming line
                             # if we know we're zero crossing, the angle to start and to end will always be pi (180deg) apart
                             # we want to find a point perpendicular to the line between start and end, at a distance of self.zero_crossing_radius
@@ -1190,11 +1159,12 @@ class PolarXZKinematics:
 
                             intersections[radius] = (intersection_subset[0],)
                         else:
+                            pass
                             # somehow we found ourselves in the lowest radius, but we don't intersect with it?
-                            logging.info(
+                            self.debug_log(
                                 "looking at smallest radius, but no intersection"
                             )
-                            logging.info(intersection_subset)
+                            self.debug_log(intersection_subset)
                             # return [(move.start_pos, move.end_pos)]
                         handled_zero = True
                         continue
@@ -1227,7 +1197,8 @@ class PolarXZKinematics:
             else:  # else, start at start, then go to first intersection
                 total_intersections = [move.start_pos] + total_intersections
             if ending_within_zero_radius:
-                logging.info(
+                pass
+                self.debug_log(
                     "ending within zero radius, total_intersections: %s",
                     total_intersections,
                 )
@@ -1239,7 +1210,7 @@ class PolarXZKinematics:
             else:
                 total_intersections = total_intersections + [move.end_pos]
 
-            logging.info("total_intersections: %s", total_intersections)
+            self.debug_log("total_intersections: %s", total_intersections)
             # sort total intersections by distance from start
             # if move.end_pos[0] == 0 and move.end_pos[1] == 0:
             #     total_intersections.pop(-1)
@@ -1280,7 +1251,7 @@ class PolarXZKinematics:
                 )
                 current_e_pos = new_e_pos
                 current_z_pos = new_z_pos
-            logging.info("actual moves: %s", actual_moves)
+            self.debug_log("actual moves: %s", actual_moves)
             # if we had a single intersection,
             # that is an edge case where we are trying to move
             # within the zero crossing radius

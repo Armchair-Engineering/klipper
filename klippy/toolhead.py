@@ -41,8 +41,8 @@ class Move:
         else:
             inv_move_d = 1. / move_d
         self.axes_r = [d * inv_move_d for d in axes_d]
-        logging.info('axes_d', self.axes_d)
-        logging.info('axes_r', self.axes_r)
+        # logging.info('axes_d', self.axes_d)
+        # logging.info('axes_r', self.axes_r)
         self.min_move_t = move_d / velocity
         # Junction speeds are tracked in velocity squared.  The
         # delta_v2 is the maximum amount of this squared-velocity that
@@ -60,11 +60,6 @@ class Move:
         self.accel = min(self.accel, accel)
         self.delta_v2 = 2.0 * self.move_d * self.accel
         self.smooth_delta_v2 = min(self.smooth_delta_v2, self.delta_v2)
-        logging.info("self.max_cruise_v2", self.max_cruise_v2)
-        logging.info("self.min_move_t", self.min_move_t)
-        logging.info("self.accel", self.accel)
-        logging.info("self.delta_v2", self.delta_v2)
-        logging.info("self.smooth_delta_v2", self.smooth_delta_v2)
         
     def move_error(self, msg="Move out of range"):
         ep = self.end_pos
@@ -113,10 +108,19 @@ class Move:
         self.end_v = end_v = math.sqrt(end_v2)
         # Determine time spent in each portion of move (time is the
         # distance divided by average velocity)
-        logging.info("start_v: %f, cruise_v: %f, end_v: %f", start_v, cruise_v, end_v)
-        self.accel_t = accel_d / ((start_v + cruise_v) * 0.5)
-        self.cruise_t = cruise_d / cruise_v
-        self.decel_t = decel_d / ((end_v + cruise_v) * 0.5)
+        # logging.info("start_v: %f, cruise_v: %f, end_v: %f", start_v, cruise_v, end_v)
+        if (start_v + cruise_v) == 0:
+            self.accel_t = 0
+        else:
+            self.accel_t = accel_d / ((start_v + cruise_v) * 0.5)
+        if cruise_v == 0:
+            self.cruise_t = 0
+        else:
+            self.cruise_t = cruise_d / cruise_v
+        if end_v + cruise_v == 0:
+            self.decel_t = 0
+        else:
+            self.decel_t = decel_d / ((end_v + cruise_v) * 0.5)
 
 LOOKAHEAD_FLUSH_TIME = 0.250
 
@@ -150,6 +154,7 @@ class MoveQueue:
             move = queue[i]
             reachable_start_v2 = next_end_v2 + move.delta_v2
             start_v2 = min(move.max_start_v2, reachable_start_v2)
+            
             reachable_smoothed_v2 = next_smoothed_v2 + move.smooth_delta_v2
             smoothed_v2 = min(move.max_smoothed_v2, reachable_smoothed_v2)
             if smoothed_v2 < reachable_smoothed_v2:
@@ -168,6 +173,9 @@ class MoveQueue:
                         if not update_flush_count and i < flush_count:
                             mc_v2 = peak_cruise_v2
                             for m, ms_v2, me_v2 in reversed(delayed):
+                                # logging.info("cruise_v2: %f", mc_v2)
+                                # logging.info("start_v2: %f", ms_v2)
+                                # logging.info("m: %f", m.__dict__)
                                 mc_v2 = min(mc_v2, ms_v2)
                                 m.set_junction(min(ms_v2, mc_v2), mc_v2
                                                , min(me_v2, mc_v2))
@@ -195,7 +203,7 @@ class MoveQueue:
         move.calc_junction(self.queue[-2])
         self.junction_flush -= move.min_move_t
         if self.junction_flush <= 0.:
-            logging.info('flushing...')
+            # logging.info('flushing...')
             # Enough moves have been queued to reach the target flush time.
             self.flush(lazy=True)
 
@@ -429,8 +437,8 @@ class ToolHead:
         self.kin.set_position(newpos, homing_axes)
         self.printer.send_event("toolhead:set_position")
     def move(self, newpos, speed):
-        logging.info('commanded_pos: %s', self.commanded_pos)
-        logging.info('newpos: %s', newpos)
+        # logging.info('commanded_pos: %s', self.commanded_pos)
+        # logging.info('newpos: %s', newpos)
         move = Move(self, self.commanded_pos, newpos, speed)
         if not move.move_d:
             return
@@ -440,7 +448,7 @@ class ToolHead:
             if move_positions is None:
                 moves = []
             elif move_positions:
-                logging.info("move_positions: %s", move_positions)
+                # logging.info("move_positions: %s", move_positions)
                 moves = [
                     Move(self, move[0], move[1], speed) for move in move_positions
                 ]
@@ -504,7 +512,7 @@ class ToolHead:
         self.drip_completion = drip_completion
         # Submit move
         try:
-            logging.info('drip newpos: %s', newpos)
+            # logging.info('drip newpos: %s', newpos)
             self.move(newpos, speed)
         except self.printer.command_error as e:
             self.flush_step_generation()
