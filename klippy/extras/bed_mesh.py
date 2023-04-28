@@ -4,7 +4,7 @@
 # Copyright (C) 2018-2019 Eric Callahan <arksine.code@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import logging, math, json, collections
+import logging, math, json, collections, random
 from . import probe
 
 PROFILE_VERSION = 1
@@ -282,7 +282,17 @@ class BedMeshCalibrate:
     ALGOS = ['lagrange', 'bicubic']
     def __init__(self, config, bedmesh):
         self.printer = config.get_printer()
-        self.orig_config = {'radius': None, 'origin': None}
+        self.adaptive = config.getboolean("adaptive", False)
+        if self.adaptive:
+            if "exclude_object" not in self.printer.objects:
+                raise config.error(
+                    "Adaptive Meshing requires exclude_object to be defined!"
+                )
+            self.exclude_object = self.printer.lookup_object("exclude_object")
+            self.margin = config.getfloat("margin", 0.0)
+            self.max_fuzz = config.getfloat("max_fuzz", 0.0)
+
+        self.orig_config = {"radius": None, "origin": None}
         self.radius = self.origin = None
         self.mesh_min = self.mesh_max = (0., 0.)
         self.relative_reference_index = config.getint(
@@ -520,17 +530,105 @@ class BedMeshCalibrate:
                 params['algo'] = 'lagrange'
     def update_config(self, gcmd):
         # reset default configuration
-        self.radius = self.orig_config['radius']
-        self.origin = self.orig_config['origin']
-        self.relative_reference_index = self.orig_config['rri']
-        self.mesh_min = self.orig_config['mesh_min']
-        self.mesh_max = self.orig_config['mesh_max']
+        self.radius = self.orig_config["radius"]
+        self.origin = self.orig_config["origin"]
+        self.relative_reference_index = self.orig_config["rri"]
+        # if adaptive meshing is enabled,
+        # and we're not currently printing,
+        # generate adaptive meshes
+        use_full_mesh = gcmd.get("FULL_MESH", False)
+
+        self.mesh_min = self.orig_config["mesh_min"]
+        self.mesh_max = self.orig_config["mesh_max"]
+
         for key in list(self.mesh_config.keys()):
             self.mesh_config[key] = self.orig_config[key]
 
         params = gcmd.get_command_parameters()
+
         need_cfg_update = False
-        if 'RELATIVE_REFERENCE_INDEX' in params:
+
+        if (
+            self.adaptive
+            and len(self.exclude_object.objects) != 0
+            and not use_full_mesh
+        ):
+            # find mesh min and mesh max
+            # iterate over self.exclude_object.objects
+            # find the min x and min y of all polygons in objects
+            # find the max x and max y of all polygons in objects
+            list_of_xs = []
+            list_of_ys = []
+            for obj in self.exclude_object.objects:
+                for point in obj["polygon"]:
+                    list_of_xs.append(point[0])
+                    list_of_ys.append(point[1])
+            mesh_min = [min(list_of_xs), min(list_of_ys)]
+            mesh_max = [max(list_of_xs), max(list_of_ys)]
+            # add offsets
+
+            fuzz = random.randint(0, 100 * self.max_fuzz) / 100.0
+
+            fuzzed_margin = self.margin + fuzz / 2
+
+            adjusted_mesh_min = [
+                mesh_min[0] - fuzzed_margin,
+                mesh_min[1] - fuzzed_margin,
+            ]
+            adjusted_mesh_max = [
+                mesh_max[0] + fuzzed_margin,
+                mesh_max[1] + fuzzed_margin,
+            ]
+
+            orig_mesh_min = self.orig_config["mesh_min"]
+            orig_mesh_max = self.orig_config["mesh_max"]
+
+            # Force margin to respect original mesh bounds
+
+            if adjusted_mesh_min[0] < orig_mesh_min[0]:
+                adjusted_mesh_min[0] = orig_mesh_min[0]
+
+            if adjusted_mesh_min[1] < orig_mesh_min[1]:
+                adjusted_mesh_min[1] = orig_mesh_min[1]
+
+            if adjusted_mesh_max[0] > orig_mesh_max[0]:
+                adjusted_mesh_max[0] = orig_mesh_max[0]
+
+            if adjusted_mesh_max[1] > orig_mesh_max[1]:
+                adjusted_mesh_max[1] = orig_mesh_max[1]
+            gcmd.respond_info("mesh_min: %s" % (adjusted_mesh_min))
+            gcmd.respond_info("mesh_max: %s" % (adjusted_mesh_max))
+            self.mesh_min = mesh_min
+            self.mesh_max = mesh_max
+
+            cur_x_count = self.mesh_config["x_count"]
+            cur_y_count = self.mesh_config["y_count"]
+            gcmd.respond_info("cur_x_count: %s" % (cur_x_count))
+            gcmd.respond_info("cur_y_count: %s" % (cur_y_count))
+            max_probe_point_distance_x = (mesh_max[0] - mesh_min[0]) / (
+                cur_x_count - 1
+            )
+            max_probe_point_distance_y = (mesh_max[1] - mesh_min[1]) / (
+                cur_y_count - 1
+            )
+            gcmd.respond_info(
+                "max_probe_point_distance_x: %s" % (max_probe_point_distance_x)
+            )
+            gcmd.respond_info(
+                "max_probe_point_distance_y: %s" % (max_probe_point_distance_y)
+            )
+
+            new_x_probe_count = math.ceil((mesh_max[0] - mesh_min[0]) / max_probe_point_distance_x) + 1
+            new_y_probe_count = math.ceil((mesh_max[1] - mesh_min[1]) / max_probe_point_distance_y) + 1
+
+            gcmd.respond_info("new_x_probe_count: %s" % (new_x_probe_count))
+            gcmd.respond_info("new_y_probe_count: %s" % (new_y_probe_count))
+            self.mesh_config["x_count"] = new_x_probe_count
+            self.mesh_config["y_count"] = new_y_probe_count
+
+            need_cfg_update = True
+
+        if "RELATIVE_REFERENCE_INDEX" in params:
             self.relative_reference_index = gcmd.get_int(
                 'RELATIVE_REFERENCE_INDEX')
             if self.relative_reference_index < 0:
@@ -1134,8 +1232,11 @@ class ProfileManager:
                     params[key] = profile.get(key)
         # Register GCode
         self.gcode.register_command(
-            'BED_MESH_PROFILE', self.cmd_BED_MESH_PROFILE,
-            desc=self.cmd_BED_MESH_PROFILE_help)
+            "BED_MESH_PROFILE",
+            self.cmd_BED_MESH_PROFILE,
+            desc=self.cmd_BED_MESH_PROFILE_help,
+        )
+
     def get_profiles(self):
         return self.profiles
     def get_current_profile(self):
@@ -1230,7 +1331,7 @@ class ProfileManager:
                     raise gcmd.error(
                         "Value for parameter '%s' must be specified" % (key)
                     )
-                if name == "default" and key == 'SAVE':
+                if name == "default" and key == "SAVE":
                     gcmd.respond_info(
                         "Profile 'default' is reserved, please choose"
                         " another profile name.")
