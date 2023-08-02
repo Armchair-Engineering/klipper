@@ -592,9 +592,7 @@ class MCU:
         self._mcu_tick_awake = 0.
 
         #noncritical mcus
-        self.non_critical_recon_timer = self._reactor.register_timer(
-            self.non_critical_recon_event
-        )
+        self.non_critical_recon_timer = None
         self.is_non_critical = config.getboolean("is_non_critical", False)
         self._non_critical_disconnected = False
         # self.last_noncrit_recon_eventtime = None
@@ -673,9 +671,10 @@ class MCU:
         self._non_critical_disconnected = True
         self._clocksync.disconnect()
         self._disconnect()
-        self._reactor.update_timer(
-            self.non_critical_recon_timer, self._reactor.NOW
+        self.non_critical_recon_timer = self._reactor.register_timer(
+            self.non_critical_recon_event, self._reactor.NOW + self.reconnect_interval
         )
+
         logging.info("mcu: %s disconnected", self._name)
 
     def non_critical_recon_event(self, eventtime):
@@ -757,6 +756,7 @@ class MCU:
             return
         self.reset_to_initial_state()
         self._connect()
+        
         self._reactor.update_timer(
             self.non_critical_recon_timer, self._reactor.NEVER
         )
@@ -769,14 +769,14 @@ class MCU:
         self._config_cmds = []
         self._restart_cmds = []
         self._init_cmds = []
-        self._reserved_move_slots = 0
         self._stepqueues = []
-        self._steppersync = None
+
     def _connect(self):
         if self._non_critical_disconnected:
-            self.non_critical_recon_timer = self._reactor.register_timer(
-                self.non_critical_recon_event, self._reactor.NOW + self.reconnect_interval
-            )
+            if self.non_critical_recon_timer is None:
+                self.non_critical_recon_timer = self._reactor.register_timer(
+                    self.non_critical_recon_event, self._reactor.NOW + self.reconnect_interval
+                )
             return
         config_params = self._send_get_config()
         if not config_params['is_config']:
@@ -1020,10 +1020,10 @@ class MCU:
         if (self._clocksync.is_active() or self.is_fileoutput()
             or self._is_timeout):
             return
-        self._is_timeout = True
         if self.is_non_critical:
             self.handle_non_critical_disconnect()
             return
+        self._is_timeout = True
         logging.info("Timeout with MCU '%s' (eventtime=%f)",
                      self._name, eventtime)
         self._printer.invoke_shutdown("Lost communication with MCU '%s'" % (
