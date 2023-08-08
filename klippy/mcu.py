@@ -990,7 +990,7 @@ class MCU:
         self._reactor.pause(self._reactor.monotonic() + 2.)
         chelper.run_hub_ctrl(1)
     def _firmware_restart(self, force=False):
-        if self._is_mcu_bridge and not force:
+        if (self._is_mcu_bridge and not force) or self._non_critical_disconnected:
             return
         if self._restart_method == 'rpi_usb':
             self._restart_rpi_usb()
