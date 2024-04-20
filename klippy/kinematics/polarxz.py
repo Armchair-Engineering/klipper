@@ -82,21 +82,28 @@ def get_quadrant_crosses(p1, p2):
 #     # GCODE: move radius arm to (x_offset)
 #     # GCODE: spit back Y offset to calibration command
 
+
 def get_circle_line_intersections_newnew(p1, p2, distance):
-    p = Point(0,0)
+    p = Point(0, 0)
     c = p.buffer(distance, resolution=25).boundary
     l = LineString([(p1[0], p1[1]), (p2[0], p2[1])])
     i = c.intersection(l)
-    
+
     if isinstance(i, Point):
         intersection = i.coords[0]
-        return [(intersection[0], intersection[1]),]
+        return [
+            (intersection[0], intersection[1]),
+        ]
     elif isinstance(i, MultiPoint):
         intersection1 = i.geoms[0].coords[0]
         intersection2 = i.geoms[1].coords[0]
-        return [(intersection1[0], intersection1[1]), (intersection2[0], intersection2[1])]
+        return [
+            (intersection1[0], intersection1[1]),
+            (intersection2[0], intersection2[1]),
+        ]
     else:
         return []
+
 
 def get_circle_line_intersections_new(p1, p2, dist):
     # find points on a line that are a given distance from origin
@@ -206,6 +213,7 @@ def get_quadrant_info(p1, p2):
 
 
 # def generate_segmentation_radii(offset_dist, num_thresholds):
+
 
 #     radius = 100
 #     threshold_size = radius / num_thresholds
@@ -330,10 +338,9 @@ class PolarXZKinematics:
         self.homing = False
 
         self.segmentation_radii = generate_segmentation_radii(
-                self.zero_crossing_radius, 0.5, round(self.max_xy, 0) + 5
-            )
-        
-   
+            self.zero_crossing_radius, 0.5, round(self.max_xy, 0) + 5
+        )
+
     def debug_log(self, *args, **kwargs):
         if self.debug:
             logging.info(*args, **kwargs)
@@ -344,6 +351,7 @@ class PolarXZKinematics:
         else:
             self.stepper_bed.setup_itersolve("polarxz_stepper_alloc", b"a")
             self.stepper_bed.set_trapq(self.toolhead.get_trapq())
+
     def get_steppers(self):
         return list(self.steppers)
 
@@ -427,6 +435,7 @@ class PolarXZKinematics:
         self.stepper_bed.home(self.max_rotational_accel)
         self.setup_bed_itersolve(for_homing=False)
         self.debug_log("bed homed! should set itersolve back.")
+
     def home(self, homing_state):
         self.homing = True
         # Each axis is homed independently and in order
@@ -479,7 +488,9 @@ class PolarXZKinematics:
                         - self.zero_crossing_radius
                     )
                     if forcepos[axis] < position_min:
-                        forcepos[axis] = position_min + self.zero_crossing_radius
+                        forcepos[axis] = (
+                            position_min + self.zero_crossing_radius
+                        )
                 else:
                     forcepos[axis] += (
                         position_max
@@ -487,17 +498,25 @@ class PolarXZKinematics:
                         + self.zero_crossing_radius
                     )
                     if forcepos[axis] > position_max:
-                        forcepos[axis] = position_max - self.zero_crossing_radius
+                        forcepos[axis] = (
+                            position_max - self.zero_crossing_radius
+                        )
             else:
                 if hi.positive_dir:
                     forcepos[axis] = position_min
                 else:
                     forcepos[axis] = position_max
-            
+
             # Perform homing
-            self.debug_log("homing axis: %s, forcepos: %s, homepos: %s", axis, forcepos, homepos)
+            self.debug_log(
+                "homing axis: %s, forcepos: %s, homepos: %s",
+                axis,
+                forcepos,
+                homepos,
+            )
             homing_state.home_rails([rail], forcepos, homepos)
         self.homing = False
+
     def _motor_off(self, print_time):
         self.limit_z = (1.0, -1.0)
         self.limit_xy2 = -1.0
@@ -575,8 +594,14 @@ class PolarXZKinematics:
 
             # move.limit_speed(adjusted_velocity, self.max_rotational_accel)
             self.debug_log("step_ratio: %s" % step_ratio)
-            self.debug_log("step ratio * max rotational velocity: %s" % abs(step_ratio * self.max_rotational_velocity))
-            self.debug_log("step ratio * max rotational accel: %s" % abs(step_ratio * self.max_rotational_accel))
+            self.debug_log(
+                "step ratio * max rotational velocity: %s"
+                % abs(step_ratio * self.max_rotational_velocity)
+            )
+            self.debug_log(
+                "step ratio * max rotational accel: %s"
+                % abs(step_ratio * self.max_rotational_accel)
+            )
             move.limit_speed(
                 abs(step_ratio * self.max_rotational_velocity),
                 abs(step_ratio * self.max_rotational_accel),
@@ -982,7 +1007,7 @@ class PolarXZKinematics:
             #         distance((cart_start_x, cart_start_y), (0, 0)) - EPSILON
             #     )
             #     self.debug_log("zero_cross_radius: %s" % zero_cross_radius)
-            segmentation_radii = self.segmentation_radii 
+            segmentation_radii = self.segmentation_radii
 
             smallest_segmentation_index = len(segmentation_radii) - 1
             # segmentation thresholds are sorted by distance, descending
@@ -1045,12 +1070,12 @@ class PolarXZKinematics:
             #         ):
             #             mid_circle_index = index
 
-            self.debug_log("segmentation_radii: %s", segmentation_radii)
-            self.debug_log(
-                "start_radius: %s", segmentation_radii[start_circle_index]
-            )
-            self.debug_log("mid_radius: %s", segmentation_radii[mid_circle_index])
-            self.debug_log("end_radius: %s", segmentation_radii[end_circle_index])
+            # self.debug_log("segmentation_radii: %s", segmentation_radii)
+            # self.debug_log(
+            #     "start_radius: %s", segmentation_radii[start_circle_index]
+            # )
+            # self.debug_log("mid_radius: %s", segmentation_radii[mid_circle_index])
+            # self.debug_log("end_radius: %s", segmentation_radii[end_circle_index])
             if (
                 start_circle_index == mid_circle_index == end_circle_index
             ) and start_circle_index != smallest_segmentation_index:
@@ -1091,8 +1116,8 @@ class PolarXZKinematics:
                     return None
                 return ((start_pos, end_pos),)
 
-            self.debug_log("start_circle_index: %s", start_circle_index)
-            self.debug_log("segmentation_radii: %s", segmentation_radii)
+            # self.debug_log("start_circle_index: %s", start_circle_index)
+            # self.debug_log("segmentation_radii: %s", segmentation_radii)
 
             intersections = OrderedDict()
             indices_to_traverse = []
@@ -1125,16 +1150,18 @@ class PolarXZKinematics:
                 if distance(move.end_pos, (0, 0)) < self.zero_crossing_radius:
                     ending_within_zero_radius = True
             handled_zero = False
-            self.debug_log("indices_to_traverse: %s", indices_to_traverse)
-            self.debug_log("intersections: %s", intersections)
+            # self.debug_log("indices_to_traverse: %s", indices_to_traverse)
+            # self.debug_log("intersections: %s", intersections)
             for i in indices_to_traverse:
                 radius = segmentation_radii[i]
-                
+
                 if radius not in intersections:
                     intersection_subset = get_circle_line_intersections(
                         move.start_pos, move.end_pos, radius
                     )
-                    self.debug_log("intersection_subset: %s", intersection_subset)
+                    self.debug_log(
+                        "intersection_subset: %s", intersection_subset
+                    )
                     if i == len(segmentation_radii) - 1 and not handled_zero:
                         # we're in the zero radius
                         # print("zero radius!")
@@ -1261,7 +1288,17 @@ class PolarXZKinematics:
                     return None
                 else:
                     intersection = total_intersections[0]
-                    return [(move.start_pos, [intersection[0], intersection[1], move.end_pos[2], move.end_pos[3]])]
+                    return [
+                        (
+                            move.start_pos,
+                            [
+                                intersection[0],
+                                intersection[1],
+                                move.end_pos[2],
+                                move.end_pos[3],
+                            ],
+                        )
+                    ]
             return actual_moves
         else:
             return []
